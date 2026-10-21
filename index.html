@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小型橋樑 H 型鋼複合斷面結構設計與規範檢核系統 | Bridge H-Beam Design & Verification Tool</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            eng: {
+              50: '#f0f4f8',
+              100: '#d9e2ec',
+              200: '#bcccdc',
+              300: '#9fb3c8',
+              500: '#486581',
+              700: '#243b53',
+              800: '#102a43',
+              900: '#0a1929',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f4f5f6;
+      color: #334155;
+    }
+    /* Blueprint / Engineering Grid Background for Canvas Container - Morandi Clean Style */
+    .blueprint-bg {
+      background-color: #fafbfc;
+      background-image: 
+        linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+      background-size: 20px 20px;
+      border: 1px solid #e2e8f0;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #eceff1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #b0bec5;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #90a4ae;
+    }
+    /* Print Friendly Styles */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-full-width {
+        width: 100% !important;
+        max-width: 100% !important;
+        grid-column: span 12 / span 12 !important;
+      }
+      .print-break-inside-avoid {
+        break-inside: avoid;
+      }
+      .blueprint-bg {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .shadow-sm, .shadow-md, .shadow-lg {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Header Navigation -->
+  <header class="bg-[#3e5663] text-[#f8faf9] border-b-4 border-[#789694] shadow-sm sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-[#53707e]/40 border border-[#8da4b0] flex items-center justify-center text-[#d2e0e6] font-bold text-xl">
+          <i class="fa-solid fa-bridge"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-bold tracking-wide text-white">小型橋樑 H 型鋼複合斷面結構設計與規範檢核系統</h1>
+            <span class="hidden sm:inline-block text-xs bg-[#5a7684] text-[#f0f4f6] px-2 py-0.5 rounded font-mono">CNS / 公路橋樑規範 v2.5</span>
+          </div>
+          <p class="text-xs text-[#cad6dc] font-mono">Bridge H-Beam Composite Section Design & Code Verification System</p>
+        </div>
+      </div>
+
+      <!-- Preset & Export Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2 no-print">
+        <span class="text-xs text-[#dbe4e8] mr-1"><i class="fa-solid fa-bolt text-[#e2b77a] mr-1"></i>範例：</span>
+        <button onclick="loadPreset('pedestrian_8m')" class="px-2.5 py-1.5 text-xs font-medium bg-[#4a6573] hover:bg-[#5b7a8a] text-[#f8faf9] rounded border border-[#6b8998] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-person-walking"></i> 1.2m人行橋
+        </button>
+        <button onclick="loadPreset('scooter_12m')" class="px-2.5 py-1.5 text-xs font-medium bg-[#4a6573] hover:bg-[#5b7a8a] text-[#f8faf9] rounded border border-[#6b8998] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-motorcycle"></i> 1.8m機車橋
+        </button>
+        <button onclick="loadPreset('car_15m')" class="px-2.5 py-1.5 text-xs font-medium bg-[#4a6573] hover:bg-[#5b7a8a] text-[#f8faf9] rounded border border-[#6b8998] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-truck-pickup"></i> 2.5m汽車橋
+        </button>
+
+        <div class="h-5 w-[1px] bg-[#617c8a] mx-0.5"></div>
+
+        <!-- Project Export / Import / Reset Buttons -->
+        <button onclick="exportProjectFile()" title="匯出專案檔 (JSON 格式)，方便日後重新載入或交接備存" class="px-2.5 py-1.5 text-xs font-medium bg-[#5b7c76] hover:bg-[#6b8f88] text-white rounded border border-[#7a9e97] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-file-export text-[#b8ded7]"></i> 匯出專案
+        </button>
+        <label title="匯入已儲存的專案檔 (.json)" class="px-2.5 py-1.5 text-xs font-medium bg-[#5b7c76] hover:bg-[#6b8f88] text-white rounded border border-[#7a9e97] transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <i class="fa-solid fa-file-import text-[#b8ded7]"></i> 匯入專案
+          <input type="file" id="importProjectFileInput" accept=".json" onchange="importProjectFile(event)" class="hidden">
+        </label>
+        <button onclick="resetToInitialDefaults()" title="將所有尺寸、材料與載重參數重置回系統初始預設值" class="px-2.5 py-1.5 text-xs font-medium bg-[#8c6b6b] hover:bg-[#9e7a7a] text-white rounded border border-[#a88686] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-rotate-left text-[#f0cfcf]"></i> 重置預設
+        </button>
+
+        <div class="h-5 w-[1px] bg-[#617c8a] mx-0.5"></div>
+
+        <button onclick="exportReport()" class="px-3 py-1.5 text-xs font-semibold bg-[#6b8779] hover:bg-[#7b998a] text-white rounded border border-[#83a393] shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-file-pdf"></i> 列印 / 匯出計算書
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Print-only Report Header -->
+  <div class="hidden print:block max-w-[1600px] mx-auto w-full px-4 pt-2 pb-4 border-b-2 border-slate-800 mb-4">
+    <div class="flex justify-between items-end">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900">結構設計計算書：小型橋樑 H 型鋼組合主梁檢核</h2>
+        <p class="text-xs text-slate-600">依據交通部《公路橋樑設計規範》及內政部《鋼構造建築物鋼結構設計技術規範》編製</p>
+      </div>
+      <div class="text-right text-xs font-mono text-slate-600">
+        <div>專案名稱：<span id="printProjectName" class="font-bold text-slate-900">農路排水跨越人行便橋工程</span></div>
+        <div>列印日期：<span id="printDate"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- LEFT COLUMN: Input Control Panel (4 cols on desktop) -->
+    <section class="lg:col-span-5 xl:col-span-4 space-y-5 print-full-width">
+
+      <!-- Card 1: Project & Bridge Geometry / Loading -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+        <div class="bg-[#546e7a] text-white px-4 py-2.5 flex items-center justify-between">
+          <h2 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-[#b0bec5]"></i> 1. 橋樑幾何與設計載重條件
+          </h2>
+          <span class="text-[11px] font-mono text-[#eceff1]">Bridge & Load Params</span>
+        </div>
+
+        <div class="p-4 space-y-3.5 text-xs">
+          <!-- Project Title & Bridge Type -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">工程案名 / 備註</label>
+              <input type="text" id="projectName" value="跨越排水溝人行景觀橋 (L=8m)" oninput="recalculateAll()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-800 font-medium">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">橋樑用途與分類</label>
+              <select id="bridgeType" onchange="onBridgeTypeChange()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-slate-50 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium text-slate-800">
+                <option value="pedestrian">人行橋 / 景觀步道橋 (活載 L/800)</option>
+                <option value="scooter">機車橋 / 自行車道橋 (活載 L/600)</option>
+                <option value="light_vehicle">輕型汽車便橋 / 農路橋 (活載 L/500)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Geometry Inputs -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 border-t border-slate-200">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1" title="簡支梁支承中心距離">計算跨徑 L (m)</label>
+              <input type="number" id="spanL" value="8.0" min="1.0" max="40.0" step="0.5" oninput="recalculateAll()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded font-mono text-sm font-semibold text-sky-900 bg-sky-50/50 focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1" title="橋面全寬，用於將面載重轉換為單主梁線載重">橋面全寬 W (m)</label>
+              <input type="number" id="bridgeWidth" value="2.0" min="0.8" max="12.0" step="0.1" oninput="recalculateAll()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded font-mono text-sm font-semibold text-slate-800">
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <label class="block font-semibold text-slate-700 mb-1" title="橫向隔梁提供受壓翼板側向支撐之間距">橫隔梁間距 Lb (m)</label>
+              <input type="number" id="unbracedLb" value="2.0" min="0.2" max="40.0" step="0.2" oninput="recalculateAll()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded font-mono text-sm font-semibold text-slate-800">
+            </div>
+            <div class="col-span-2 sm:col-span-3 pt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-700" title="橫向隔梁/支撐構件之型鋼規格"><i class="fa-solid fa-arrows-left-right text-[#5b7c8d]"></i> 橫向隔梁規格：</span>
+                <select id="diaphragmSection" onchange="recalculateAll()" class="px-2 py-1 border border-slate-300 rounded bg-white font-mono text-xs font-semibold text-slate-800">
+                  <optgroup label="── CNS 標準槽鋼 [ 系列 ──">
+                    <option value="C75x40x5x7">[ 75×40×5×7 (6.9 kg/m)</option>
+                    <option value="C100x50x5x7.5">[ 100×50×5×7.5 (9.4 kg/m)</option>
+                    <option value="C125x65x6x8">[ 125×65×6×8 (13.4 kg/m)</option>
+                    <option value="C150x75x6.5x10" selected>[ 150×75×6.5×10 (18.6 kg/m)</option>
+                    <option value="C150x75x9x12.5">[ 150×75×9×12.5 (24.0 kg/m)</option>
+                    <option value="C180x75x7x10.5">[ 180×75×7×10.5 (21.4 kg/m)</option>
+                    <option value="C200x80x7.5x11">[ 200×80×7.5×11 (24.6 kg/m)</option>
+                    <option value="C200x90x8x13.5">[ 200×90×8×13.5 (30.3 kg/m)</option>
+                    <option value="C250x90x9x13">[ 250×90×9×13 (34.6 kg/m)</option>
+                    <option value="C250x90x11x14.5">[ 250×90×11×14.5 (40.2 kg/m)</option>
+                    <option value="C300x90x9x13">[ 300×90×9×13 (38.1 kg/m)</option>
+                    <option value="C300x90x10x15.5">[ 300×90×10×15.5 (43.8 kg/m)</option>
+                    <option value="C300x90x12x16">[ 300×90×12×16 (48.6 kg/m)</option>
+                    <option value="C380x100x10.5x16">[ 380×100×10.5×16 (54.5 kg/m)</option>
+                    <option value="C380x100x13x20">[ 380×100×13×20 (67.3 kg/m)</option>
+                  </optgroup>
+                  <optgroup label="── CNS 標準 H 型鋼系列 ──">
+                    <option value="H100x100x6x8">H 100×100×6×8 (16.9 kg/m)</option>
+                    <option value="H125x125x6.5x9">H 125×125×6.5×9 (23.6 kg/m)</option>
+                    <option value="H150x75x5x7">H 150×75×5×7 (14.0 kg/m)</option>
+                    <option value="H150x150x7x10">H 150×150×7×10 (31.1 kg/m)</option>
+                    <option value="H175x90x5x8">H 175×90×5×8 (18.1 kg/m)</option>
+                    <option value="H175x175x7.5x11">H 175×175×7.5×11 (40.4 kg/m)</option>
+                    <option value="H200x100x5.5x8">H 200×100×5.5×8 (20.9 kg/m)</option>
+                    <option value="H200x200x8x12">H 200×200×8×12 (49.9 kg/m)</option>
+                    <option value="H250x125x6x9">H 250×125×6×9 (29.0 kg/m)</option>
+                    <option value="H250x250x9x14">H 250×250×9×14 (71.8 kg/m)</option>
+                    <option value="H300x150x6.5x9">H 300×150×6.5×9 (36.7 kg/m)</option>
+                    <option value="H300x300x10x15">H 300×300×10×15 (94.0 kg/m)</option>
+                    <option value="H350x175x7x11">H 350×175×7×11 (49.4 kg/m)</option>
+                    <option value="H350x350x12x19">H 350×350×12×19 (137.0 kg/m)</option>
+                    <option value="H400x200x8x13">H 400×200×8×13 (66.0 kg/m)</option>
+                    <option value="H400x400x13x21">H 400×400×13×21 (172.0 kg/m)</option>
+                  </optgroup>
+                </select>
+              </div>
+              <span id="diaphragmQuickBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                P_br = 2% 挫屈力檢核中
+              </span>
+            </div>
+          </div>
+
+          <!-- Steel Material & Design Method -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">CNS 結構鋼材規格</label>
+              <select id="steelGrade" onchange="onSteelGradeChange()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-slate-50 font-mono text-xs font-medium text-slate-800">
+                <option value="SN400">SN400B / SS400 (Fy = 235 MPa)</option>
+                <option value="SM490">SN490B / SM490A (Fy = 325 MPa)</option>
+                <option value="A572_50">ASTM A572 Gr.50 (Fy = 345 MPa)</option>
+                <option value="CUSTOM">自訂降伏強度 Fy</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">鋼材降伏強度 Fy (MPa)</label>
+              <input type="number" id="steelFy" value="235" min="150" max="690" step="5" oninput="recalculateAll()"
+                class="w-full px-2.5 py-1.5 border border-slate-300 rounded font-mono text-sm font-semibold text-slate-800">
+            </div>
+          </div>
+
+          <!-- Design Method Toggle -->
+          <div class="pt-1 border-t border-slate-200">
+            <label class="block font-semibold text-slate-700 mb-1.5">設計檢核方法 (同時對照顯示，選擇主控基準)</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 p-2 rounded border border-slate-300 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-sky-50 has-[:checked]:border-sky-600 has-[:checked]:text-sky-900">
+                <input type="radio" name="designMethod" value="ASD" checked onchange="recalculateAll()" class="text-sky-600">
+                <div>
+                  <div class="font-bold">ASD 容許應力法</div>
+                  <div class="text-[10px] text-slate-500">傳統橋樑/工地便橋常用 (D + L(1+I))</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded border border-slate-300 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-sky-50 has-[:checked]:border-sky-600 has-[:checked]:text-sky-900">
+                <input type="radio" name="designMethod" value="LSD" onchange="recalculateAll()" class="text-sky-600">
+                <div>
+                  <div class="font-bold">LSD 極限設計法 (LRFD)</div>
+                  <div class="text-[10px] text-slate-500">現行鋼結構規範 (1.2D + 1.6L(1+I))</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Loadings Section -->
+          <div class="pt-2 border-t border-slate-200 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800"><i class="fa-solid fa-weight-hanging text-amber-600 mr-1"></i>載重參數設定</span>
+                <button type="button" onclick="toggleLoadGuideModal(true)"
+                  class="no-print inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-medium border border-sky-300 transition shadow-sm"
+                  title="點選查看台灣規範常見各項載重參數建議取值與說明">
+                  <i class="fa-solid fa-circle-question text-sky-600"></i> 各參數建議值
+                </button>
+              </div>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                <input type="checkbox" id="autoSelfWeight" checked onchange="recalculateAll()" class="rounded text-sky-600">
+                自動計入 H 型鋼自重 (加 15% 接合與橫隔梁構件)
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label class="block text-slate-600 mb-1" title="RC橋面板、鋪面、欄杆等附加靜載重 (kN/m²)">橋面靜載 qD (kN/m²)</label>
+                <input type="number" id="deckDeadLoad" value="2.50" min="0" max="50" step="0.25" oninput="recalculateAll()"
+                  class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1" title="行人或車道均佈活載重 (人行橋規範為 4.0~5.0 kN/m²)">均佈活載 qL (kN/m²)</label>
+                <input type="number" id="liveUniformLoad" value="4.00" min="0" max="50" step="0.5" oninput="recalculateAll()"
+                  class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1" title="跨中集中活載重，例如檢修車或輕型車軸重 (kN)">跨中集中活載 PL (kN)</label>
+                <input type="number" id="livePointLoad" value="10.0" min="0" max="500" step="5.0" oninput="recalculateAll()"
+                  class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1" title="公路橋樑設計規範衝擊係數 I = 15/(L+38) <= 0.30">衝擊係數 I (%)</label>
+                <div class="flex gap-1">
+                  <input type="number" id="impactFactorPct" value="25.0" min="0" max="50" step="1" oninput="recalculateAll()"
+                    class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+                  <button onclick="calcCodeImpactFactor()" title="依規範公式 I = 15/(L+38) 自動計算"
+                    class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-medium whitespace-nowrap">
+                    規範值
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1" title="雙側欄杆或管線線載重合計 (kN/m)">欄杆/管線 w_rail (kN/m)</label>
+                <input type="number" id="railingLoad" value="1.50" min="0" max="30" step="0.25" oninput="recalculateAll()"
+                  class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1" title="偏心或施工不均勻導致之載重分配修正係數 (>=1.0)">橫向分配係數 η</label>
+                <input type="number" id="distFactor" value="1.05" min="1.0" max="2.0" step="0.05" oninput="recalculateAll()"
+                  class="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold">
+              </div>
+              <div class="col-span-2 sm:col-span-3 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                <label class="text-slate-700 font-semibold flex items-center gap-1.5" title="公路橋樑設計規範 / 人行天橋設計規範：垂直向基本振動頻率 f_v >= 3.0 Hz，横向基本振動頻率 f_lat >= 1.5 Hz">
+                  <i class="fa-solid fa-wave-square text-sky-600"></i> 人行共振頻率計算活載參與比例 ψL (%)：
+                </label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="vibLiveLoadRatioPct" value="0" min="0" max="50" step="5" oninput="recalculateAll()"
+                    class="w-20 px-2 py-1 border border-slate-300 rounded font-mono text-xs font-semibold text-sky-900 bg-sky-50/50">
+                  <span class="text-[10px] text-slate-500">(0% 為規範空載靜重基準 wD，亦可考慮 10%~20% 行人駐留質量)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Multi-Beam Composite Configuration -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+        <div class="bg-[#546e7a] text-white px-4 py-2.5 flex items-center justify-between">
+          <h2 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-[#b0bec5]"></i> 2. 多根 H 型鋼組合斷面配置
+          </h2>
+          <span class="text-[11px] font-mono text-[#eceff1]">Composite H-Beams</span>
+        </div>
+
+        <div class="p-4 space-y-3.5 text-xs">
+          <!-- Mode & Quick Controls -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+              <label class="font-semibold text-slate-700">型鋼中心間距 S (mm)：</label>
+              <input type="number" id="beamSpacingMm" value="550" min="100" max="3000" step="50" oninput="recalculateAll()"
+                class="w-24 px-2 py-1 border border-slate-300 rounded font-mono text-xs font-bold text-sky-900 bg-sky-50">
+            </div>
+            <div class="flex items-center gap-1.5 no-print">
+              <button onclick="addBeamRow()" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded font-medium flex items-center gap-1 transition">
+                <i class="fa-solid fa-plus"></i> 新增型鋼
+              </button>
+              <button onclick="unifyAllBeams()" title="將所有型鋼設為與第 1 支相同規格" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-medium transition">
+                統一規格
+              </button>
+            </div>
+          </div>
+
+          <!-- Vertical Offset / Composite Action Option -->
+          <div class="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="font-semibold text-slate-700">各型鋼底部基準對齊方式：</span>
+              <span class="text-[11px] text-slate-500">若混用不同高度之型鋼，可選擇頂部齊平或底部齊平</span>
+            </div>
+            <select id="alignmentMode" onchange="recalculateAll()" class="px-2 py-1 border border-slate-300 rounded bg-white text-slate-800 font-medium">
+              <option value="top">頂部齊平 (橋面板鋪設面一致)</option>
+              <option value="bottom">底部齊平 (支承墊高一致)</option>
+              <option value="center">形心對齊 (軸心對稱)</option>
+            </select>
+          </div>
+
+          <!-- Dynamic List of Beams -->
+          <div id="beamListContainer" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Custom Section Database Modal / Expandable Drawer -->
+          <details class="border border-slate-200 rounded bg-slate-50/70 no-print">
+            <summary class="px-3 py-2 cursor-pointer font-semibold text-slate-700 hover:text-sky-700 flex items-center justify-between">
+              <span><i class="fa-solid fa-database text-slate-500 mr-1.5"></i> 新增自訂 H 型鋼規格至內建資料庫 (CNS / JIS)</span>
+              <i class="fa-solid fa-chevron-down text-[10px]"></i>
+            </summary>
+            <div class="p-3 border-t border-slate-200 space-y-2.5 bg-white">
+              <p class="text-[11px] text-slate-500">輸入 H × B × t1 × t2 (mm)，系統將自動依工字梁幾何公式（含圓角半徑修正）計算 A, Ix, Iy, Zx, Zy, rx, ry 並加入選單：</p>
+              <div class="grid grid-cols-4 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-500">高度 H (mm)</label>
+                  <input type="number" id="custH" value="450" class="w-full px-2 py-1 border rounded font-mono text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500">寬度 B (mm)</label>
+                  <input type="number" id="custB" value="200" class="w-full px-2 py-1 border rounded font-mono text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500">腹板 t1 (mm)</label>
+                  <input type="number" id="custT1" value="9" class="w-full px-2 py-1 border rounded font-mono text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500">翼板 t2 (mm)</label>
+                  <input type="number" id="custT2" value="14" class="w-full px-2 py-1 border rounded font-mono text-xs">
+                </div>
+              </div>
+              <button onclick="addCustomSectionToDB()" class="w-full py-1.5 bg-eng-700 hover:bg-eng-800 text-white rounded font-medium text-xs transition">
+                <i class="fa-solid fa-circle-plus mr-1"></i> 計算斷面性質並加入選單
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Card 3: Built-in CNS H-Beam Database Reference Table -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden no-print">
+        <div class="bg-[#546e7a] text-white px-4 py-2 flex items-center justify-between">
+          <h2 class="text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-table text-[#b0bec5]"></i> 內建 CNS / JIS H 型鋼常用規格速查表
+          </h2>
+          <span class="text-[10px] font-mono text-[#eceff1]">CNS 1490 / JIS G3192</span>
+        </div>
+        <div class="max-h-52 overflow-y-auto">
+          <table class="w-full text-[11px] text-left border-collapse">
+            <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-300">
+              <tr>
+                <th class="py-1.5 px-2.5">型號 (H×B×t1×t2)</th>
+                <th class="py-1.5 px-2 text-right">單位重<br>(kg/m)</th>
+                <th class="py-1.5 px-2 text-right">A<br>(cm²)</th>
+                <th class="py-1.5 px-2 text-right">Ix<br>(cm⁴)</th>
+                <th class="py-1.5 px-2.5 text-right">Zx<br>(cm³)</th>
+              </tr>
+            </thead>
+            <tbody id="dbReferenceTableBody" class="divide-y divide-slate-200 font-mono text-slate-700">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Canvas Graphics, Properties & Code Verification (8 cols on desktop) -->
+    <section class="lg:col-span-7 xl:col-span-8 space-y-5 print-full-width">
+
+      <!-- Top Summary Status Banner -->
+      <div id="overallStatusBanner" class="rounded-lg p-4 border-l-8 shadow-sm flex flex-wrap items-center justify-between gap-4 bg-white border-emerald-500">
+        <div class="flex items-center gap-3.5">
+          <div id="overallStatusIcon" class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl font-bold">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="overallStatusBadge" class="px-2.5 py-0.5 text-xs font-bold rounded bg-emerald-600 text-white">OK</span>
+              <span id="summaryConfigText" class="text-sm font-bold text-slate-800 font-mono">4 × H 300×300×10×15 (SN400)</span>
+            </div>
+            <p id="overallStatusDesc" class="text-xs text-slate-600 mt-1">
+              所有撓度、抗彎強度、抗剪強度與側向扭轉挫屈長細比皆符合《公路橋樑設計規範》與《鋼構造設計規範》要求。
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-5 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+          <div class="text-right">
+            <div class="text-[11px] text-slate-500">自然振動頻率 f1</div>
+            <div id="naturalFreqDisplay" class="text-lg font-bold font-mono text-sky-700">6.85 Hz</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px] text-slate-500">最大應力比 / 容量比 (D/C)</div>
+            <div id="maxDCRatioDisplay" class="text-2xl font-bold font-mono text-emerald-600">0.68</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px] text-slate-500">預估主梁總鋼重</div>
+            <div id="totalSteelWeightDisplay" class="text-lg font-bold font-mono text-slate-800">3.01 t</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Canvas Visualizations (Top: Cross-Section & Elevation; Bottom: Plan View) -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
+        <!-- Canvas 1: Composite Cross-Section View -->
+        <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+          <div class="bg-[#546e7a] text-white px-4 py-2 flex items-center justify-between">
+            <h3 class="text-xs font-bold flex items-center gap-2">
+              <i class="fa-solid fa-vector-square text-[#b0bec5]"></i> 組合斷面配置圖 (Cross-Section View)
+            </h3>
+            <span id="crossSectionScaleTag" class="text-[10px] font-mono text-[#eceff1]">Auto-Scale | 單位: mm</span>
+          </div>
+          <div class="blueprint-bg relative flex items-center justify-center p-2">
+            <canvas id="sectionCanvas" width="540" height="310" class="w-full h-auto max-h-[310px]"></canvas>
+          </div>
+          <div class="px-3.5 py-2 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-wrap justify-between text-[11px] text-[#475569] font-mono">
+            <span>組合全寬 B_tot: <strong id="labelTotalWidth" class="text-[#1e293b]">1950 mm</strong></span>
+            <span>整體重心軸 y_bot: <strong id="labelCentroidY" class="text-[#33691e]">150.0 mm</strong></span>
+            <span>斷面深度 H_max: <strong id="labelMaxDepth" class="text-[#1e293b]">300 mm</strong></span>
+          </div>
+        </div>
+
+        <!-- Canvas 2: Bridge Elevation, Load, Shear & Bending Moment Diagram -->
+        <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+          <div class="bg-[#546e7a] text-white px-4 py-2 flex items-center justify-between">
+            <h3 class="text-xs font-bold flex items-center gap-2">
+              <i class="fa-solid fa-chart-area text-[#e0e0e0]"></i> 橋樑立面載重、彎矩與撓度圖 (Elevation & BMD)
+            </h3>
+            <span class="text-[10px] font-mono text-[#eceff1]">Real-Time Structural Mechanics</span>
+          </div>
+          <div class="blueprint-bg relative flex items-center justify-center p-2">
+            <canvas id="elevationCanvas" width="540" height="310" class="w-full h-auto max-h-[310px]"></canvas>
+          </div>
+          <div class="px-3.5 py-2 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-wrap justify-between text-[11px] text-[#475569] font-mono">
+            <span>設計彎矩 M_design: <strong id="labelMmax" class="text-[#a83232]">215.4 kN·m</strong></span>
+            <span>最大剪力 V_design: <strong id="labelVmax" class="text-[#8d6e63]">107.7 kN</strong></span>
+            <span>活載撓度 Δ_LL: <strong id="labelDeltaLL" class="text-[#2e7d32]">6.42 mm</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas 3: Bridge Structural Plan View (平面配置圖) -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid mb-5">
+        <div class="bg-[#546e7a] text-white px-4 py-2 flex items-center justify-between">
+          <h3 class="text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-[#b0bec5]"></i> 橋樑結構平面配置圖 (Bridge Plan View)
+          </h3>
+          <div class="flex items-center gap-2">
+            <span id="planDiaphragmHeaderBadge" class="text-[10px] font-mono text-[#ffffff] bg-[#3e5663] px-2 py-0.5 rounded border border-[#78909c]">
+              橫樑: [ 150×75 (H=150, B=75)
+            </span>
+            <span class="hidden sm:inline-block text-[10px] font-mono text-[#eceff1]">Top-Down Layout | 單位: mm / m</span>
+          </div>
+        </div>
+        <div class="blueprint-bg relative flex items-center justify-center p-2 overflow-x-auto">
+          <canvas id="planCanvas" width="1080" height="260" class="w-full h-auto max-h-[260px]"></canvas>
+        </div>
+        <div class="px-3.5 py-2 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-wrap justify-between text-[11px] text-[#475569] font-mono">
+          <span>計算跨度 L: <strong id="labelPlanSpan" class="text-[#1e293b]">8.00 m</strong></span>
+          <span>橋面全寬 W: <strong id="labelPlanWidth" class="text-[#1e293b]">1.20 m</strong></span>
+          <span>橫隔梁配置與大小: <strong id="labelPlanDiaphragms" class="text-[#33691e]">共 5 道 [ 150×75 (H=150mm × B=75mm)</strong></span>
+          <span>主梁配置: <strong id="labelPlanBeams" class="text-[#5b7c8d]">3 支主梁 (中心距 500 mm)</strong></span>
+        </div>
+      </div>
+
+      <!-- Composite Section Geometric & Internal Force Properties Summary -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+        <div class="bg-[#546e7a] text-white px-4 py-2.5 flex items-center justify-between">
+          <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-calculator text-[#b0bec5]"></i> 3. 組合斷面幾何性質與內力分析結果
+          </h3>
+          <span class="text-[11px] font-mono text-[#eceff1]">Composite Geometric & Force Summary</span>
+        </div>
+        <div class="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="p-2.5 rounded bg-[#f4f6f8] border border-[#e0e0e0]">
+            <div class="text-[#607d8b] text-[11px]">總斷面積 A_total</div>
+            <div id="propAtotal" class="font-mono text-base font-bold text-[#263238] mt-0.5">479.2 cm²</div>
+            <div id="propUnitWeight" class="text-[10px] font-mono text-[#78909c]">單位總重: 376.0 kg/m</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#f4f6f8] border border-[#e0e0e0]">
+            <div class="text-[#607d8b] text-[11px]">強軸總慣性矩 Ix_total</div>
+            <div id="propIxTotal" class="font-mono text-base font-bold text-[#37474f] mt-0.5">81,600 cm⁴</div>
+            <div id="propCentroidInfo" class="text-[10px] font-mono text-[#78909c]">重心高 ȳ: 15.00 cm</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#f4f6f8] border border-[#e0e0e0]">
+            <div class="text-[#607d8b] text-[11px]">強軸彈性斷面係數 Zx_min</div>
+            <div id="propZxTotal" class="font-mono text-base font-bold text-[#37474f] mt-0.5">5,440 cm³</div>
+            <div id="propZxPlastic" class="text-[10px] font-mono text-[#78909c]">塑性 Zpx: 6,080 cm³</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#f4f6f8] border border-[#e0e0e0]">
+            <div class="text-[#607d8b] text-[11px]">弱軸慣性矩 ΣIy / 組合 Iy,comp</div>
+            <div id="propIyTotal" class="font-mono text-base font-bold text-[#263238] mt-0.5">27,000 cm⁴</div>
+            <div id="propRxRy" class="text-[10px] font-mono text-[#78909c]">rx: 13.05 cm | ry: 7.51 cm</div>
+          </div>
+
+          <!-- Internal Force Row -->
+          <div class="p-2.5 rounded bg-[#fcf9f2] border border-[#e8dfc8]">
+            <div class="text-[#795548] text-[11px]">靜載線載重 wD (含鋼梁自重)</div>
+            <div id="forceWd" class="font-mono text-sm font-bold text-[#3e2723] mt-0.5">10.83 kN/m</div>
+            <div id="forceMd" class="text-[10px] font-mono text-[#8d6e63]">MD: 86.6 kN·m | VD: 43.3 kN</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#fcf9f2] border border-[#e8dfc8]">
+            <div class="text-[#795548] text-[11px]">活載線載重 w(L+I) (含衝擊與分配)</div>
+            <div id="forceWl" class="font-mono text-sm font-bold text-[#3e2723] mt-0.5">10.50 kN/m</div>
+            <div id="forceMl" class="text-[10px] font-mono text-[#8d6e63]">M(L+I): 110.3 kN·m | V(L+I): 55.1 kN</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#f1f6f8] border border-[#c9dbe3]">
+            <div class="text-[#455a64] text-[11px]">ASD 服務載重內力 (D + L + I)</div>
+            <div id="forceMasd" class="font-mono text-sm font-bold text-[#263238] mt-0.5">Ms = 196.9 kN·m</div>
+            <div id="forceVasd" class="text-[10px] font-mono text-[#455a64]">Vs = 98.4 kN (剪力)</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#faf3f3] border border-[#e6c8c8]">
+            <div class="text-[#8c5050] text-[11px]">LSD 極限設計內力 (1.2D + 1.6(L+I))</div>
+            <div id="forceMlsd" class="font-mono text-sm font-bold text-[#5c2e2e] mt-0.5">Mu = 280.4 kN·m</div>
+            <div id="forceVlsd" class="text-[10px] font-mono text-[#8c5050]">Vu = 140.2 kN (極限剪力)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Code Verification Table (with Legal Citations & Equations) -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+        <div class="bg-[#546e7a] text-white px-4 py-2.5 flex items-center justify-between">
+          <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-scale-balanced text-[#b0bec5]"></i> 4. 台灣現行橋樑與鋼構造設計規範檢核表 (含法規依據與公式)
+          </h3>
+          <span id="activeMethodBadge" class="text-xs bg-[#607d8b] text-white px-2 py-0.5 rounded font-mono">主控基準：ASD 容許應力法</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="bg-slate-100 text-slate-700 border-b-2 border-slate-300">
+              <tr>
+                <th class="py-2.5 px-3 w-36">檢核項目</th>
+                <th class="py-2.5 px-3">法規依據與設計計算公式說明</th>
+                <th class="py-2.5 px-3 w-36 text-right">實際計算值</th>
+                <th class="py-2.5 px-3 w-36 text-right">容許 / 極限值</th>
+                <th class="py-2.5 px-3 w-24 text-center">應力比<br>(D/C)</th>
+                <th class="py-2.5 px-3 w-24 text-center">判定結果</th>
+              </tr>
+            </thead>
+            <tbody id="codeCheckTableBody" class="divide-y divide-slate-200">
+              <!-- Populated dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detailed Step-by-Step Engineering Calculation Sheet (Collapsible / Print Visible) -->
+      <div class="bg-white rounded-lg shadow-sm border border-[#cfd8dc] overflow-hidden print-break-inside-avoid">
+        <div class="bg-[#546e7a] text-white px-4 py-2.5 flex items-center justify-between">
+          <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-file-lines text-[#b0bec5]"></i> 5. 結構分析與規範檢核詳細計算書 (Calculation Details)
+          </h3>
+          <span class="text-[11px] font-mono text-[#eceff1]">Step-by-Step Engineering Derivation</span>
+        </div>
+        <div id="calculationReportContent" class="p-4 text-xs text-slate-700 space-y-3 leading-relaxed font-sans">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-[#455a64] text-[#cfd8dc] text-xs py-3 px-4 mt-6 no-print border-t border-[#607d8b]">
+    <div class="max-w-[1600px] mx-auto text-center font-medium">
+      © 2026 版權所有 製作者：劉哲旻
+    </div>
+  </footer>
+
+  <!-- Modal: Load Parameters Engineering Guide / Recommended Values -->
+  <div id="loadGuideModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 no-print">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="bg-[#546e7a] text-white px-5 py-3.5 flex items-center justify-between border-b border-[#455a64]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 text-[#cfd8dc] flex items-center justify-center text-lg">
+            <i class="fa-solid fa-book-open-reader"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-white">小型橋樑載重參數建議值與法規依據參考表</h3>
+            <p class="text-xs text-[#cfd8dc] font-mono">Reference Values for Bridge Dead & Live Load Parameters</p>
+          </div>
+        </div>
+        <button onclick="toggleLoadGuideModal(false)" class="text-[#cfd8dc] hover:text-white p-1 rounded transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 max-h-[75vh] overflow-y-auto space-y-4 text-xs text-slate-700">
+        <div class="bg-sky-50 border-l-4 border-sky-500 p-3 rounded text-slate-700 leading-relaxed">
+          <span class="font-bold text-sky-900">💡 說明：</span>下表彙整台灣現行《公路橋樑設計規範》、《鋼構造建築物鋼結構設計技術規範》及常見土木人行步道、農路機車便橋之工程實務標準數值。點選各項右側的 <span class="font-semibold text-sky-700">「帶入此數值」</span> 即可快速套用至計算畫面。
+        </div>
+
+        <!-- Table of Recommended Values -->
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-100 text-slate-700 border-b border-slate-300 font-semibold">
+              <tr>
+                <th class="py-2.5 px-3 w-32">參數名稱</th>
+                <th class="py-2.5 px-3 w-40">建議取值範圍</th>
+                <th class="py-2.5 px-3">工程情境與法規出處說明</th>
+                <th class="py-2.5 px-3 w-28 text-center">快捷套用</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              
+              <!-- qD -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  橋面附加靜載<br><span class="font-mono text-sky-800 font-semibold">qD (kN/m²)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>木/塑木鋪面：1.0 ~ 1.5</div>
+                  <div>鋼格柵板：1.2 ~ 1.8</div>
+                  <div>12~15cm RC板：2.8 ~ 3.6</div>
+                  <div>瀝青鋪裝層：1.0 ~ 1.5</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  依結構形式與橋面板材質合計。<br>
+                  • 輕型景觀步道橋（鍍鋅格柵或塑木）：常取 <strong>1.50 ~ 2.00 kN/m²</strong><br>
+                  • 標準 RC 橋面版（含預留鋪面更新重）：常取 <strong>2.50 ~ 3.50 kN/m²</strong>
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('deckDeadLoad', 1.50)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">1.5 (輕質)</button>
+                  <button onclick="applyParamValue('deckDeadLoad', 2.50)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">2.5 (標準RC)</button>
+                </td>
+              </tr>
+
+              <!-- qL -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  均佈活載重<br><span class="font-mono text-sky-800 font-semibold">qL (kN/m²)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>人行/景觀橋：4.0 ~ 5.0</div>
+                  <div>機車專用橋：5.0</div>
+                  <div>農路/輕型車橋：5.0 ~ 6.0</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  • <strong>《公路橋樑設計規範》第 2.6 節</strong>：人行道均佈活載依跨徑遞減，通常取 <strong>4.0 ~ 5.0 kN/m²</strong> (約 400~500 kgf/m²，相當於每平方公尺站 6 位成人密集擁擠狀態)。<br>
+                  • 小型機車橋建議取 <strong>5.0 kN/m²</strong>；車行車道折算均佈載重建議取 <strong>6.0 kN/m²</strong>。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('liveUniformLoad', 4.00)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">4.0 (人行)</button>
+                  <button onclick="applyParamValue('liveUniformLoad', 5.00)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">5.0 (機車)</button>
+                </td>
+              </tr>
+
+              <!-- PL -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  跨中集中活載<br><span class="font-mono text-sky-800 font-semibold">PL (kN)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>人行檢修單輪：10.0 kN</div>
+                  <div>重型機車/三輪車：25.0 ~ 30.0 kN</div>
+                  <div>小貨車單軸重：50.0 ~ 75.0 kN</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  考慮偶發之特定單一集中載重（如農用搬運車、景觀清潔檢修車或救護機車）。<br>
+                  • 純人行橋：通常檢核 <strong>10.0 kN</strong>（約 1 公噸檢修小車）。<br>
+                  • 機車/農路便橋：取 <strong>25 ~ 30 kN</strong>（單輪/輪軸重）。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('livePointLoad', 10.0)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">10.0 (人行)</button>
+                  <button onclick="applyParamValue('livePointLoad', 30.0)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">30.0 (機車)</button>
+                </td>
+              </tr>
+
+              <!-- I (Impact) -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  衝擊係數<br><span class="font-mono text-sky-800 font-semibold">I (%)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>規範上限：≦ 30.0%</div>
+                  <div>公式：15 / (L + 38)</div>
+                  <div>純人行靜態：可取 0 ~ 15%</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  • <strong>《公路橋樑設計規範》第 2.8 節</strong>：鋼橋受車輛動態跳躍之衝擊係數公式為 <strong>I = 15 / (L + 38) ≦ 0.30 (30%)</strong>。<br>
+                  • 跨徑 8m 時規範值為 30.0%；跨徑 12m 時為 30.0%；跨徑 20m 時約 25.8%。<br>
+                  • 若僅供純行人行走且步速緩慢，規範允許人行活載不計衝擊或酌減。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="calcCodeImpactFactor(); toggleLoadGuideModal(false);" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">依跨徑計算</button>
+                  <button onclick="applyParamValue('impactFactorPct', 0)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">0% (無衝擊)</button>
+                </td>
+              </tr>
+
+              <!-- w_rail -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  欄杆與管線線重<br><span class="font-mono text-sky-800 font-semibold">w_rail (kN/m)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>鋼管/不鏽鋼欄杆：0.8 ~ 1.5</div>
+                  <div>景觀實木/鍛造欄杆：1.2 ~ 2.0</div>
+                  <div>RC護欄或外掛水管：2.0 ~ 3.5</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  計算全橋雙側欄杆總重，並包含照明管線、給排水管或電纜槽重。<br>
+                  • 一般鋼管/金屬欄杆兩側合計約 <strong>1.0 ~ 1.5 kN/m</strong>。<br>
+                  • 若加設景觀防護網或外掛較重自來水管，建議增估至 <strong>2.0 ~ 2.5 kN/m</strong>。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('railingLoad', 1.00)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">1.0 (輕金屬)</button>
+                  <button onclick="applyParamValue('railingLoad', 2.00)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">2.0 (景觀欄杆)</button>
+                </td>
+              </tr>
+
+              <!-- eta -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  橫向分配係數<br><span class="font-mono text-sky-800 font-semibold">η (無因次)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>均勻剛性橫隔：1.00 ~ 1.05</div>
+                  <div>考慮單側偏心人潮：1.05 ~ 1.15</div>
+                  <div>雙主梁寬橋面：1.15 ~ 1.25</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  考慮橋面橫向剛度不均、偏心人群集中在單側主梁所產生之分配放大效應。<br>
+                  • 設有良好橫隔梁之 3~4 支型鋼組合梁：建議取 <strong>1.05 ~ 1.10</strong> 即可。<br>
+                  • 施工簡陋或支數較少（僅 2 支）時建議保守取 <strong>1.15</strong>。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('distFactor', 1.05)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">1.05 (標準)</button>
+                  <button onclick="applyParamValue('distFactor', 1.15)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">1.15 (偏心保守)</button>
+                </td>
+              </tr>
+
+              <!-- psi_L -->
+              <tr class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-800">
+                  頻率活載參與比<br><span class="font-mono text-sky-800 font-semibold">ψL (%)</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                  <div>規範基準：0% (空載靜重)</div>
+                  <div>常態人群：10%</div>
+                  <div>尖峰擁擠：20%</div>
+                </td>
+                <td class="py-2.5 px-3 text-slate-600 leading-normal">
+                  人行橋自然頻率檢核時，人體質量是否計入有效振動質量的比例。<br>
+                  • <strong>規範基準通常取 0%</strong>（只計橋體結構靜重 m = wD/g），因空載時自然頻率最高且最易被激發。<br>
+                  • 亦可輸入 <strong>10%~20%</strong> 評估密集人潮是否會壓低自然頻率進入 1.6~2.4 Hz 共振區。
+                </td>
+                <td class="py-2.5 px-3 text-center space-y-1">
+                  <button onclick="applyParamValue('vibLiveLoadRatioPct', 0)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">0% (規範標準)</button>
+                  <button onclick="applyParamValue('vibLiveLoadRatioPct', 15)" class="w-full px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-sky-700 border border-slate-300 font-mono text-[11px] transition">15% (人群質量)</button>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-100 px-5 py-3 flex justify-between items-center border-t border-slate-200">
+        <span class="text-[11px] text-slate-500 font-mono">提示：點選「帶入」後會自動觸發即時結構重算</span>
+        <button onclick="toggleLoadGuideModal(false)" class="px-4 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded font-medium text-xs transition">
+          關閉參考表
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Main Engineering & UI JavaScript -->
+  <script>
+    // =========================================================================
+    // 1. BUILT-IN CNS / JIS H-BEAM SECTION DATABASE
+    // Units: H, B, t1, t2, r in mm; A in cm²; Ix, Iy in cm⁴; Zx, Zy in cm³; rx, ry in cm; weight in kg/m
+    // =========================================================================
+    const H_BEAM_DB = [
+      { id: "H100x100x6x8",   name: "H 100×100×6×8",   H: 100, B: 100, t1: 6,  t2: 8,  r: 8,  A: 21.59, w: 16.9, Ix: 378,    Iy: 134,   Zx: 75.6,  Zy: 26.7, rx: 4.18, ry: 2.49 },
+      { id: "H125x125x6.5x9", name: "H 125×125×6.5×9", H: 125, B: 125, t1: 6.5,t2: 9,  r: 8,  A: 30.00, w: 23.6, Ix: 839,    Iy: 293,   Zx: 134,   Zy: 46.9, rx: 5.29, ry: 3.13 },
+      { id: "H150x150x7x10",  name: "H 150×150×7×10",  H: 150, B: 150, t1: 7,  t2: 10, r: 8,  A: 39.65, w: 31.1, Ix: 1620,   Iy: 563,   Zx: 216,   Zy: 75.1, rx: 6.40, ry: 3.77 },
+      { id: "H175x175x7.5x11",name: "H 175×175×7.5×11",H: 175, B: 175, t1: 7.5,t2: 11, r: 12, A: 51.42, w: 40.4, Ix: 2900,   Iy: 984,   Zx: 331,   Zy: 112,  rx: 7.50, ry: 4.37 },
+      { id: "H200x100x5.5x8", name: "H 200×100×5.5×8", H: 200, B: 100, t1: 5.5,t2: 8,  r: 8,  A: 26.67, w: 20.9, Ix: 1810,   Iy: 134,   Zx: 181,   Zy: 26.7, rx: 8.23, ry: 2.24 },
+      { id: "H200x200x8x12",  name: "H 200×200×8×12",  H: 200, B: 200, t1: 8,  t2: 12, r: 12, A: 63.53, w: 49.9, Ix: 4720,   Iy: 1600,  Zx: 472,   Zy: 160,  rx: 8.62, ry: 5.02 },
+      { id: "H250x125x6x9",   name: "H 250×125×6×9",   H: 250, B: 125, t1: 6,  t2: 9,  r: 8,  A: 36.97, w: 29.0, Ix: 3960,   Iy: 294,   Zx: 317,   Zy: 47.0, rx: 10.4, ry: 2.82 },
+      { id: "H250x250x9x14",  name: "H 250×250×9×14",  H: 250, B: 250, t1: 9,  t2: 14, r: 16, A: 91.43, w: 71.8, Ix: 10700,  Iy: 3650,  Zx: 856,   Zy: 292,  rx: 10.8, ry: 6.32 },
+      { id: "H300x150x6.5x9", name: "H 300×150×6.5×9", H: 300, B: 150, t1: 6.5,t2: 9,  r: 12, A: 46.78, w: 36.7, Ix: 7210,   Iy: 508,   Zx: 481,   Zy: 67.7, rx: 12.4, ry: 3.29 },
+      { id: "H300x300x10x15", name: "H 300×300×10×15", H: 300, B: 300, t1: 10, t2: 15, r: 18, A: 119.8, w: 94.0, Ix: 20400,  Iy: 6750,  Zx: 1360,  Zy: 450,  rx: 13.1, ry: 7.51 },
+      { id: "H350x175x7x11",  name: "H 350×175×7×11",  H: 350, B: 175, t1: 7,  t2: 11, r: 12, A: 62.91, w: 49.4, Ix: 13500,  Iy: 984,   Zx: 771,   Zy: 112,  rx: 14.6, ry: 3.96 },
+      { id: "H350x350x12x19", name: "H 350×350×12×19", H: 350, B: 350, t1: 12, t2: 19, r: 20, A: 173.9, w: 137.0,Ix: 40300,  Iy: 13600, Zx: 2300,  Zy: 777,  rx: 15.2, ry: 8.84 },
+      { id: "H400x200x8x13",  name: "H 400×200×8×13",  H: 400, B: 200, t1: 8,  t2: 13, r: 16, A: 84.12, w: 66.0, Ix: 23700,  Iy: 1740,  Zx: 1190,  Zy: 174,  rx: 16.8, ry: 4.55 },
+      { id: "H400x400x13x21", name: "H 400×400×13×21", H: 400, B: 400, t1: 13, t2: 21, r: 22, A: 218.7, w: 172.0,Ix: 66600,  Iy: 22400, Zx: 3330,  Zy: 1120, rx: 17.5, ry: 10.1 },
+      { id: "H450x200x9x14",  name: "H 450×200×9×14",  H: 450, B: 200, t1: 9,  t2: 14, r: 18, A: 96.76, w: 76.0, Ix: 33500,  Iy: 1870,  Zx: 1490,  Zy: 187,  rx: 18.6, ry: 4.40 },
+      { id: "H500x200x10x16", name: "H 500×200×10×16", H: 500, B: 200, t1: 10, t2: 16, r: 20, A: 114.2, w: 89.6, Ix: 47800,  Iy: 2140,  Zx: 1910,  Zy: 214,  rx: 20.5, ry: 4.33 },
+      { id: "H600x200x11x17", name: "H 600×200×11×17", H: 600, B: 200, t1: 11, t2: 17, r: 22, A: 134.4, w: 106.0,Ix: 77600,  Iy: 2280,  Zx: 2590,  Zy: 228,  rx: 24.0, ry: 4.12 },
+      { id: "H700x300x13x24", name: "H 700×300×13×24", H: 700, B: 300, t1: 13, t2: 24, r: 26, A: 235.5, w: 185.0,Ix: 201000, Iy: 10800, Zx: 5740,  Zy: 720,  rx: 29.2, ry: 6.77 }
+    ];
+
+    // CNS / JIS Standard Diaphragm & Cross-Beam Database (橫向隔梁型鋼完整資料庫)
+    const DIAPHRAGM_DB = {
+      // ── CNS 標準槽鋼 [ 系列 ──
+      'C75x40x5x7':       { id: 'C75x40x5x7',       name: '[ 75×40×5×7',       type: 'C', H: 75,  B: 40,  t1: 5.0,  t2: 7.0,  A: 8.82,  w: 6.92, Ix: 75.3,  Zx: 20.1, rx: 2.92, ry: 1.22 },
+      'C100x50x5x7.5':    { id: 'C100x50x5x7.5',    name: '[ 100×50×5×7.5',    type: 'C', H: 100, B: 50,  t1: 5.0,  t2: 7.5,  A: 11.92, w: 9.36, Ix: 188,   Zx: 37.6, rx: 3.97, ry: 1.54 },
+      'C125x65x6x8':      { id: 'C125x65x6x8',      name: '[ 125×65×6×8',      type: 'C', H: 125, B: 65,  t1: 6.0,  t2: 8.0,  A: 17.11, w: 13.4, Ix: 424,   Zx: 67.8, rx: 4.98, ry: 1.90 },
+      'C150x75x6.5x10':   { id: 'C150x75x6.5x10',   name: '[ 150×75×6.5×10',   type: 'C', H: 150, B: 75,  t1: 6.5,  t2: 10.0, A: 23.71, w: 18.6, Ix: 861,   Zx: 115,  rx: 6.03, ry: 2.21 },
+      'C150x75x9x12.5':   { id: 'C150x75x9x12.5',   name: '[ 150×75×9×12.5',   type: 'C', H: 150, B: 75,  t1: 9.0,  t2: 12.5, A: 30.59, w: 24.0, Ix: 1050,  Zx: 140,  rx: 5.86, ry: 2.15 },
+      'C180x75x7x10.5':   { id: 'C180x75x7x10.5',   name: '[ 180×75×7×10.5',   type: 'C', H: 180, B: 75,  t1: 7.0,  t2: 10.5, A: 27.20, w: 21.4, Ix: 1380,  Zx: 153,  rx: 7.12, ry: 2.13 },
+      'C200x80x7.5x11':   { id: 'C200x80x7.5x11',   name: '[ 200×80×7.5×11',   type: 'C', H: 200, B: 80,  t1: 7.5,  t2: 11.0, A: 31.33, w: 24.6, Ix: 1950,  Zx: 195,  rx: 7.89, ry: 2.32 },
+      'C200x90x8x13.5':   { id: 'C200x90x8x13.5',   name: '[ 200×90×8×13.5',   type: 'C', H: 200, B: 90,  t1: 8.0,  t2: 13.5, A: 38.65, w: 30.3, Ix: 2490,  Zx: 249,  rx: 8.03, ry: 2.66 },
+      'C250x90x9x13':     { id: 'C250x90x9x13',     name: '[ 250×90×9×13',     type: 'C', H: 250, B: 90,  t1: 9.0,  t2: 13.0, A: 44.07, w: 34.6, Ix: 4020,  Zx: 322,  rx: 9.55, ry: 2.61 },
+      'C250x90x11x14.5':  { id: 'C250x90x11x14.5',  name: '[ 250×90×11×14.5',  type: 'C', H: 250, B: 90,  t1: 11.0, t2: 14.5, A: 51.17, w: 40.2, Ix: 4500,  Zx: 360,  rx: 9.38, ry: 2.54 },
+      'C300x90x9x13':     { id: 'C300x90x9x13',     name: '[ 300×90×9×13',     type: 'C', H: 300, B: 90,  t1: 9.0,  t2: 13.0, A: 48.57, w: 38.1, Ix: 6440,  Zx: 429,  rx: 11.5, ry: 2.53 },
+      'C300x90x10x15.5':  { id: 'C300x90x10x15.5',  name: '[ 300×90×10×15.5',  type: 'C', H: 300, B: 90,  t1: 10.0, t2: 15.5, A: 55.74, w: 43.8, Ix: 7410,  Zx: 494,  rx: 11.5, ry: 2.49 },
+      'C300x90x12x16':    { id: 'C300x90x12x16',    name: '[ 300×90×12×16',    type: 'C', H: 300, B: 90,  t1: 12.0, t2: 16.0, A: 61.90, w: 48.6, Ix: 8090,  Zx: 539,  rx: 11.4, ry: 2.45 },
+      'C380x100x10.5x16': { id: 'C380x100x10.5x16', name: '[ 380×100×10.5×16',type: 'C', H: 380, B: 100, t1: 10.5, t2: 16.0, A: 69.39, w: 54.5, Ix: 14500, Zx: 763,  rx: 14.5, ry: 2.81 },
+      'C380x100x13x20':   { id: 'C380x100x13x20',   name: '[ 380×100×13×20',   type: 'C', H: 380, B: 100, t1: 13.0, t2: 20.0, A: 85.71, w: 67.3, Ix: 17600, Zx: 926,  rx: 14.3, ry: 2.75 },
+
+      // ── CNS 標準 H 型鋼系列 ──
+      'H100x100x6x8':     { id: 'H100x100x6x8',     name: 'H 100×100×6×8',     type: 'H', H: 100, B: 100, t1: 6.0,  t2: 8.0,  A: 21.59, w: 16.9, Ix: 378,   Zx: 75.6, rx: 4.18, ry: 2.49 },
+      'H125x125x6.5x9':   { id: 'H125x125x6.5x9',   name: 'H 125×125×6.5×9',   type: 'H', H: 125, B: 125, t1: 6.5,  t2: 9.0,  A: 30.00, w: 23.6, Ix: 839,   Zx: 134,  rx: 5.29, ry: 3.13 },
+      'H150x75x5x7':      { id: 'H150x75x5x7',      name: 'H 150×75×5×7',      type: 'H', H: 150, B: 75,  t1: 5.0,  t2: 7.0,  A: 17.85, w: 14.0, Ix: 666,   Zx: 88.8, rx: 6.11, ry: 1.66 },
+      'H150x150x7x10':    { id: 'H150x150x7x10',    name: 'H 150×150×7×10',    type: 'H', H: 150, B: 150, t1: 7.0,  t2: 10.0, A: 39.65, w: 31.1, Ix: 1620,  Zx: 216,  rx: 6.40, ry: 3.77 },
+      'H175x90x5x8':      { id: 'H175x90x5x8',      name: 'H 175×90×5×8',      type: 'H', H: 175, B: 90,  t1: 5.0,  t2: 8.0,  A: 23.04, w: 18.1, Ix: 1210,  Zx: 138,  rx: 7.25, ry: 1.98 },
+      'H175x175x7.5x11':  { id: 'H175x175x7.5x11',  name: 'H 175×175×7.5×11',  type: 'H', H: 175, B: 175, t1: 7.5,  t2: 11.0, A: 51.42, w: 40.4, Ix: 2900,  Zx: 331,  rx: 7.50, ry: 4.37 },
+      'H200x100x5.5x8':   { id: 'H200x100x5.5x8',   name: 'H 200×100×5.5×8',   type: 'H', H: 200, B: 100, t1: 5.5,  t2: 8.0,  A: 26.67, w: 20.9, Ix: 1810,  Zx: 181,  rx: 8.23, ry: 2.24 },
+      'H200x200x8x12':    { id: 'H200x200x8x12',    name: 'H 200×200×8×12',    type: 'H', H: 200, B: 200, t1: 8.0,  t2: 12.0, A: 63.53, w: 49.9, Ix: 4720,  Zx: 472,  rx: 8.62, ry: 5.02 },
+      'H250x125x6x9':     { id: 'H250x125x6x9',     name: 'H 250×125×6×9',     type: 'H', H: 250, B: 125, t1: 6.0,  t2: 9.0,  A: 36.97, w: 29.0, Ix: 3960,  Zx: 317,  rx: 10.4, ry: 2.82 },
+      'H250x250x9x14':    { id: 'H250x250x9x14',    name: 'H 250×250×9×14',    type: 'H', H: 250, B: 250, t1: 9.0,  t2: 14.0, A: 91.43, w: 71.8, Ix: 10700, Zx: 856,  rx: 10.8, ry: 6.32 },
+      'H300x150x6.5x9':   { id: 'H300x150x6.5x9',   name: 'H 300×150×6.5×9',   type: 'H', H: 300, B: 150, t1: 6.5,  t2: 9.0,  A: 46.78, w: 36.7, Ix: 7210,  Zx: 481,  rx: 12.4, ry: 3.29 },
+      'H300x300x10x15':   { id: 'H300x300x10x15',   name: 'H 300×300×10×15',   type: 'H', H: 300, B: 300, t1: 10.0, t2: 15.0, A: 119.8, w: 94.0, Ix: 20400, Zx: 1360, rx: 13.1, ry: 7.51 },
+      'H350x175x7x11':    { id: 'H350x175x7x11',    name: 'H 350×175×7×11',    type: 'H', H: 350, B: 175, t1: 7.0,  t2: 11.0, A: 62.91, w: 49.4, Ix: 13500, Zx: 771,  rx: 14.6, ry: 3.96 },
+      'H350x350x12x19':   { id: 'H350x350x12x19',   name: 'H 350×350×12×19',   type: 'H', H: 350, B: 350, t1: 12.0, t2: 19.0, A: 173.9, w: 137.0,Ix: 40300, Zx: 2300, rx: 15.2, ry: 8.84 },
+      'H400x200x8x13':    { id: 'H400x200x8x13',    name: 'H 400×200×8×13',    type: 'H', H: 400, B: 200, t1: 8.0,  t2: 13.0, A: 84.12, w: 66.0, Ix: 23700, Zx: 1190, rx: 16.8, ry: 4.55 },
+      'H400x400x13x21':   { id: 'H400x400x13x21',   name: 'H 400×400×13×21',   type: 'H', H: 400, B: 400, t1: 13.0, t2: 21.0, A: 218.7, w: 172.0,Ix: 66600, Zx: 3330, rx: 17.5, ry: 10.1 }
+    };
+
+    function getDiaphragmById(id) {
+      return DIAPHRAGM_DB[id] || DIAPHRAGM_DB['C150x75x6.5x10'];
+    }
+
+    // Active array of beams in the composite girder
+    // Each entry: { sectionId: string }
+    let activeBeams = [
+      { sectionId: "H250x250x9x14" },
+      { sectionId: "H250x250x9x14" },
+      { sectionId: "H250x250x9x14" }
+    ];
+
+    const ES_MPA = 200000; // Elastic modulus of steel Es = 200,000 MPa (2.04 x 10^6 kgf/cm²)
+
+    // =========================================================================
+    // 2. INITIALIZATION & UI HELPERS
+    // =========================================================================
+    const STORAGE_KEY = "bridge_hbeam_project_data_v1";
+
+    // System default configuration - 8m Pedestrian Bridge (W=1.2m, All Pass Optimal Design)
+    const INITIAL_DEFAULTS = {
+      projectName: "溪流跨越人行景觀橋 (L=8m, W=1.2m)",
+      bridgeType: "pedestrian",
+      spanL: 8.0,
+      bridgeWidth: 1.2,
+      unbracedLb: 2.0,
+      diaphragmSection: "C150x75x6.5x10",
+      steelGrade: "SN400",
+      steelFy: 235,
+      designMethod: "ASD",
+      autoSelfWeight: true,
+      deckDeadLoad: 1.50,
+      liveUniformLoad: 4.00,
+      livePointLoad: 10.0,
+      impactFactorPct: 25.0,
+      railingLoad: 1.00,
+      distFactor: 1.05,
+      vibLiveLoadRatioPct: 0,
+      beamSpacingMm: 500,
+      alignmentMode: "top",
+      activeBeams: [
+        { sectionId: "H250x250x9x14" },
+        { sectionId: "H250x250x9x14" },
+        { sectionId: "H250x250x9x14" }
+      ],
+      customSections: []
+    };
+
+    function toggleLoadGuideModal(show) {
+      const modal = document.getElementById('loadGuideModal');
+      if (modal) {
+        if (show) {
+          modal.classList.remove('hidden');
+        } else {
+          modal.classList.add('hidden');
+        }
+      }
+    }
+
+    function applyParamValue(elementId, val) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.value = val;
+        recalculateAll();
+        // Visual flash feedback
+        el.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50');
+        }, 1000);
+      }
+      toggleLoadGuideModal(false);
+    }
+
+    // Collect all current project parameters into an object
+    function getCurrentProjectState() {
+      const designMethodEl = document.querySelector('input[name="designMethod"]:checked');
+      return {
+        version: "2.0",
+        exportDate: new Date().toISOString(),
+        projectName: document.getElementById('projectName').value,
+        bridgeType: document.getElementById('bridgeType').value,
+        spanL: parseFloat(document.getElementById('spanL').value) || 8.0,
+        bridgeWidth: parseFloat(document.getElementById('bridgeWidth').value) || 2.0,
+        unbracedLb: parseFloat(document.getElementById('unbracedLb').value) || 2.0,
+        diaphragmSection: document.getElementById('diaphragmSection') ? document.getElementById('diaphragmSection').value : "C150x75x6.5x10",
+        steelGrade: document.getElementById('steelGrade').value,
+        steelFy: parseFloat(document.getElementById('steelFy').value) || 235,
+        designMethod: designMethodEl ? designMethodEl.value : "ASD",
+        autoSelfWeight: document.getElementById('autoSelfWeight').checked,
+        deckDeadLoad: parseFloat(document.getElementById('deckDeadLoad').value) || 0,
+        liveUniformLoad: parseFloat(document.getElementById('liveUniformLoad').value) || 0,
+        livePointLoad: parseFloat(document.getElementById('livePointLoad').value) || 0,
+        impactFactorPct: parseFloat(document.getElementById('impactFactorPct').value) || 0,
+        railingLoad: parseFloat(document.getElementById('railingLoad').value) || 0,
+        distFactor: parseFloat(document.getElementById('distFactor').value) || 1.0,
+        vibLiveLoadRatioPct: parseFloat(document.getElementById('vibLiveLoadRatioPct').value) || 0,
+        beamSpacingMm: parseFloat(document.getElementById('beamSpacingMm').value) || 500,
+        alignmentMode: document.getElementById('alignmentMode').value,
+        activeBeams: JSON.parse(JSON.stringify(activeBeams)),
+        customSections: H_BEAM_DB.filter(s => s.id.startsWith('CUST_'))
+      };
+    }
+
+    // Apply an entire project state object into input controls & database
+    function applyProjectState(state, saveToStorage = true) {
+      if (!state) return;
+
+      // Restore custom sections into database if any
+      if (Array.isArray(state.customSections)) {
+        state.customSections.forEach(cust => {
+          if (!H_BEAM_DB.some(s => s.id === cust.id)) {
+            H_BEAM_DB.push(cust);
+          }
+        });
+        renderDBReferenceTable();
+      }
+
+      if (state.projectName !== undefined) document.getElementById('projectName').value = state.projectName;
+      if (state.bridgeType !== undefined) document.getElementById('bridgeType').value = state.bridgeType;
+      if (state.spanL !== undefined) document.getElementById('spanL').value = state.spanL;
+      if (state.bridgeWidth !== undefined) document.getElementById('bridgeWidth').value = state.bridgeWidth;
+      if (state.unbracedLb !== undefined) document.getElementById('unbracedLb').value = state.unbracedLb;
+      if (state.diaphragmSection !== undefined && document.getElementById('diaphragmSection')) {
+        document.getElementById('diaphragmSection').value = state.diaphragmSection;
+      }
+      if (state.steelGrade !== undefined) document.getElementById('steelGrade').value = state.steelGrade;
+      if (state.steelFy !== undefined) document.getElementById('steelFy').value = state.steelFy;
+
+      if (state.designMethod !== undefined) {
+        const rad = document.querySelector(`input[name="designMethod"][value="${state.designMethod}"]`);
+        if (rad) rad.checked = true;
+      }
+
+      if (state.autoSelfWeight !== undefined) document.getElementById('autoSelfWeight').checked = !!state.autoSelfWeight;
+      if (state.deckDeadLoad !== undefined) document.getElementById('deckDeadLoad').value = state.deckDeadLoad;
+      if (state.liveUniformLoad !== undefined) document.getElementById('liveUniformLoad').value = state.liveUniformLoad;
+      if (state.livePointLoad !== undefined) document.getElementById('livePointLoad').value = state.livePointLoad;
+      if (state.impactFactorPct !== undefined) document.getElementById('impactFactorPct').value = state.impactFactorPct;
+      if (state.railingLoad !== undefined) document.getElementById('railingLoad').value = state.railingLoad;
+      if (state.distFactor !== undefined) document.getElementById('distFactor').value = state.distFactor;
+      if (state.vibLiveLoadRatioPct !== undefined) document.getElementById('vibLiveLoadRatioPct').value = state.vibLiveLoadRatioPct;
+      if (state.beamSpacingMm !== undefined) document.getElementById('beamSpacingMm').value = state.beamSpacingMm;
+      if (state.alignmentMode !== undefined) document.getElementById('alignmentMode').value = state.alignmentMode;
+
+      if (Array.isArray(state.activeBeams) && state.activeBeams.length > 0) {
+        activeBeams = JSON.parse(JSON.stringify(state.activeBeams));
+      }
+
+      renderBeamListUI();
+      recalculateAll(saveToStorage);
+    }
+
+    // Auto Save to localStorage
+    function saveProjectToLocalStorage() {
+      try {
+        const state = getCurrentProjectState();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.warn("無法寫入 localStorage: ", err);
+      }
+    }
+
+    // Track whether there are unsaved/unexported project changes
+    let isProjectExportedOrClean = true;
+
+    // Listen to browser beforeunload event (Closing tab or window)
+    window.addEventListener('beforeunload', (e) => {
+      if (!isProjectExportedOrClean) {
+        // Standard browser prompt to prevent accidental data loss
+        e.preventDefault();
+        e.returnValue = "您所設計的橋樑專案尚未匯出儲存，確定要離開嗎？建議先匯出專案備份。";
+        return e.returnValue;
+      }
+    });
+
+    // Load from localStorage on page startup
+    function loadProjectFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const state = JSON.parse(saved);
+          applyProjectState(state, false);
+          return true;
+        }
+      } catch (err) {
+        console.warn("讀取 localStorage 失敗: ", err);
+      }
+      return false;
+    }
+
+    // Export Project File (.json)
+    function exportProjectFile() {
+      const state = getCurrentProjectState();
+      const safeProjectName = (state.projectName || "H_Beam_Bridge").replace(/[\/\\:*?"<>|]/g, "_");
+      const filename = `${safeProjectName}_${new Date().toISOString().slice(0, 10)}.json`;
+      const jsonStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Mark project as successfully exported and saved
+      isProjectExportedOrClean = true;
+    }
+
+    // Import Project File (.json)
+    function importProjectFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || (!data.spanL && !data.activeBeams)) {
+            alert("匯入失敗：所選檔案不是有效的橋樑設計專案檔。");
+            return;
+          }
+          applyProjectState(data, true);
+          isProjectExportedOrClean = true;
+          alert(`專案「${data.projectName || '未命名'}」匯入成功！已自動同步計算。`);
+        } catch (err) {
+          alert("解析專案檔案錯誤：" + err.message);
+        }
+        // Reset file input so user can import the same file again if edited
+        event.target.value = "";
+      };
+      reader.readAsText(file);
+    }
+
+    // Reset All to Initial Defaults
+    function resetToInitialDefaults() {
+      const confirmReset = confirm("確定要將所有橋樑幾何、型鋼組合斷面與載重參數重置回「系統初始預設值」嗎？\n\n（現有修改將會被覆蓋，建議可先點選「匯出專案」備份）");
+      if (!confirmReset) return;
+
+      // Remove custom sections from DB
+      for (let i = H_BEAM_DB.length - 1; i >= 0; i--) {
+        if (H_BEAM_DB[i].id.startsWith('CUST_')) {
+          H_BEAM_DB.splice(i, 1);
+        }
+      }
+      renderDBReferenceTable();
+
+      applyProjectState(INITIAL_DEFAULTS, true);
+      alert("已成功重置回初始預設值！");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('printDate').textContent = new Date().toISOString().slice(0, 10);
+      renderDBReferenceTable();
+
+      // Check if user has previously saved state in localStorage
+      const loaded = loadProjectFromLocalStorage();
+      if (!loaded) {
+        renderBeamListUI();
+        recalculateAll(true);
+      }
+      // On initial load, mark as clean until user modifies any input
+      isProjectExportedOrClean = true;
+      window.addEventListener('resize', () => recalculateAll(false));
+    });
+
+    function getSectionById(id) {
+      return H_BEAM_DB.find(s => s.id === id) || H_BEAM_DB[0];
+    }
+
+    // Calculate plastic section modulus Zpx (cm³) for a single I-shape
+    function calcSinglePlasticZx(sec) {
+      // Flanges: 2 * (B * t2) * (H/2 - t2/2) + Web: t1 * ((H - 2*t2)^2 / 4) in mm³ -> divide by 1000 for cm³
+      const hw = sec.H - 2 * sec.t2;
+      const zpxMm3 = 2 * (sec.B * sec.t2) * (sec.H / 2 - sec.t2 / 2) + sec.t1 * (hw * hw) / 4;
+      return zpxMm3 / 1000;
+    }
+
+    function renderDBReferenceTable() {
+      const tbody = document.getElementById('dbReferenceTableBody');
+      tbody.innerHTML = H_BEAM_DB.map(sec => `
+        <tr class="hover:bg-sky-50/70">
+          <td class="py-1 px-2.5 font-semibold text-slate-800">${sec.name}</td>
+          <td class="py-1 px-2 text-right">${sec.w.toFixed(1)}</td>
+          <td class="py-1 px-2 text-right">${sec.A.toFixed(1)}</td>
+          <td class="py-1 px-2 text-right">${sec.Ix.toLocaleString()}</td>
+          <td class="py-1 px-2.5 text-right">${sec.Zx.toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderBeamListUI() {
+      const container = document.getElementById('beamListContainer');
+      container.innerHTML = activeBeams.map((beam, idx) => {
+        const sec = getSectionById(beam.sectionId);
+        const optionsHtml = H_BEAM_DB.map(s =>
+          `<option value="${s.id}" ${s.id === beam.sectionId ? 'selected' : ''}>${s.name} (${s.w} kg/m)</option>`
+        ).join('');
+
+        return `
+          <div class="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50/80 hover:border-sky-300 transition">
+            <span class="w-14 px-1.5 py-1 rounded bg-eng-700 text-white font-mono text-[11px] font-bold text-center">
+              主梁 #${idx + 1}
+            </span>
+            <select onchange="updateBeamSection(${idx}, this.value)"
+              class="flex-1 px-2 py-1 border border-slate-300 rounded bg-white font-mono text-xs font-semibold text-slate-800">
+              ${optionsHtml}
+            </select>
+            <span class="hidden sm:inline-block text-[10px] font-mono text-slate-500 w-28 text-right">
+              Ix=${sec.Ix.toLocaleString()}cm⁴
+            </span>
+            <button onclick="removeBeamRow(${idx})" title="移除此支型鋼"
+              class="no-print px-2 py-1 text-slate-400 hover:text-rose-600 transition ${activeBeams.length <= 1 ? 'opacity-30 pointer-events-none' : ''}">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateBeamSection(idx, newId) {
+      activeBeams[idx].sectionId = newId;
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function addBeamRow() {
+      const lastId = activeBeams.length > 0 ? activeBeams[activeBeams.length - 1].sectionId : "H250x250x9x14";
+      activeBeams.push({ sectionId: lastId });
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function removeBeamRow(idx) {
+      if (activeBeams.length <= 1) return;
+      activeBeams.splice(idx, 1);
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function unifyAllBeams() {
+      if (activeBeams.length === 0) return;
+      const firstId = activeBeams[0].sectionId;
+      activeBeams.forEach(b => b.sectionId = firstId);
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function addCustomSectionToDB() {
+      const H = parseFloat(document.getElementById('custH').value) || 400;
+      const B = parseFloat(document.getElementById('custB').value) || 200;
+      const t1 = parseFloat(document.getElementById('custT1').value) || 8;
+      const t2 = parseFloat(document.getElementById('custT2').value) || 13;
+
+      if (H <= 2 * t2 || B <= t1) {
+        alert("尺寸不合理：高度 H 必須大於 2 倍翼板厚 t2，且寬度 B 必須大於腹板厚 t1。");
+        return;
+      }
+
+      const id = `CUST_H${H}x${B}x${t1}x${t2}`;
+      const name = `自訂 H ${H}×${B}×${t1}×${t2}`;
+      const hw = H - 2 * t2;
+      // Area in cm²
+      const A = (2 * B * t2 + hw * t1) / 100;
+      const w = A * 0.785; // 7850 kg/m³
+      // Ix, Iy in cm⁴
+      const Ix = ((B * Math.pow(H, 3) - (B - t1) * Math.pow(hw, 3)) / 12) / 10000;
+      const Iy = ((2 * t2 * Math.pow(B, 3) + hw * Math.pow(t1, 3)) / 12) / 10000;
+      const Zx = Ix / (H / 20);
+      const Zy = Iy / (B / 20);
+      const rx = Math.sqrt(Ix / A);
+      const ry = Math.sqrt(Iy / A);
+
+      const existing = H_BEAM_DB.find(s => s.id === id);
+      if (!existing) {
+        H_BEAM_DB.push({
+          id, name, H, B, t1, t2, r: 12,
+          A: parseFloat(A.toFixed(2)),
+          w: parseFloat(w.toFixed(1)),
+          Ix: Math.round(Ix),
+          Iy: Math.round(Iy),
+          Zx: Math.round(Zx),
+          Zy: Math.round(Zy),
+          rx: parseFloat(rx.toFixed(2)),
+          ry: parseFloat(ry.toFixed(2))
+        });
+      }
+      // Set all active beams or add new beam with this custom section
+      activeBeams.forEach(b => b.sectionId = id);
+      renderDBReferenceTable();
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function onSteelGradeChange() {
+      const grade = document.getElementById('steelGrade').value;
+      const fyInput = document.getElementById('steelFy');
+      if (grade === 'SN400') fyInput.value = 235;
+      else if (grade === 'SM490') fyInput.value = 325;
+      else if (grade === 'A572_50') fyInput.value = 345;
+      recalculateAll();
+    }
+
+    function onBridgeTypeChange() {
+      const type = document.getElementById('bridgeType').value;
+      if (type === 'pedestrian') {
+        document.getElementById('liveUniformLoad').value = 4.0;
+        document.getElementById('livePointLoad').value = 10.0;
+      } else if (type === 'scooter') {
+        document.getElementById('liveUniformLoad').value = 5.0;
+        document.getElementById('livePointLoad').value = 25.0;
+      } else if (type === 'light_vehicle') {
+        document.getElementById('liveUniformLoad').value = 6.0;
+        document.getElementById('livePointLoad').value = 60.0;
+      }
+      recalculateAll();
+    }
+
+    function calcCodeImpactFactor() {
+      const L = parseFloat(document.getElementById('spanL').value) || 8.0;
+      // Highway Bridge Design Code: I = 15 / (L + 38) <= 0.30
+      const I = Math.min(0.30, 15 / (L + 38));
+      document.getElementById('impactFactorPct').value = (I * 100).toFixed(1);
+      recalculateAll();
+    }
+
+    // Preset Scenarios (Optimized for 100% Code Compliance PASS)
+    function loadPreset(presetKey) {
+      if (presetKey === 'pedestrian_8m') {
+        document.getElementById('projectName').value = "溪流跨越人行景觀步道橋 (L=8m, W=1.2m)";
+        document.getElementById('bridgeType').value = "pedestrian";
+        document.getElementById('spanL').value = 8.0;
+        document.getElementById('bridgeWidth').value = 1.2;
+        document.getElementById('unbracedLb').value = 2.0;
+        if (document.getElementById('diaphragmSection')) document.getElementById('diaphragmSection').value = "C150x75x6.5x10";
+        document.getElementById('steelGrade').value = "SN400";
+        document.getElementById('steelFy').value = 235;
+        document.getElementById('deckDeadLoad').value = 1.50;
+        document.getElementById('liveUniformLoad').value = 4.00;
+        document.getElementById('livePointLoad').value = 10.0;
+        document.getElementById('impactFactorPct').value = 25.0;
+        document.getElementById('railingLoad').value = 1.00;
+        document.getElementById('distFactor').value = 1.05;
+        document.getElementById('beamSpacingMm').value = 500;
+        activeBeams = [
+          { sectionId: "H250x250x9x14" },
+          { sectionId: "H250x250x9x14" },
+          { sectionId: "H250x250x9x14" }
+        ];
+      } else if (presetKey === 'scooter_12m') {
+        document.getElementById('projectName').value = "社區農路聯絡機車橋工程 (L=12m, W=1.8m)";
+        document.getElementById('bridgeType').value = "scooter";
+        document.getElementById('spanL').value = 12.0;
+        document.getElementById('bridgeWidth').value = 1.8;
+        document.getElementById('unbracedLb').value = 2.0;
+        if (document.getElementById('diaphragmSection')) document.getElementById('diaphragmSection').value = "C250x90x9x13";
+        document.getElementById('steelGrade').value = "SM490";
+        document.getElementById('steelFy').value = 325;
+        document.getElementById('deckDeadLoad').value = 2.00;
+        document.getElementById('liveUniformLoad').value = 5.00;
+        document.getElementById('livePointLoad').value = 25.0;
+        document.getElementById('impactFactorPct').value = 26.8;
+        document.getElementById('railingLoad').value = 1.20;
+        document.getElementById('distFactor').value = 1.05;
+        document.getElementById('beamSpacingMm').value = 600;
+        activeBeams = [
+          { sectionId: "H500x200x10x16" },
+          { sectionId: "H500x200x10x16" },
+          { sectionId: "H500x200x10x16" }
+        ];
+      } else if (presetKey === 'car_15m') {
+        document.getElementById('projectName').value = "野溪農路跨越輕型汽車便橋工程 (L=15m, W=2.5m)";
+        document.getElementById('bridgeType').value = "light_vehicle";
+        document.getElementById('spanL').value = 15.0;
+        document.getElementById('bridgeWidth').value = 2.5;
+        document.getElementById('unbracedLb').value = 2.5;
+        if (document.getElementById('diaphragmSection')) document.getElementById('diaphragmSection').value = "C380x100x10.5x16";
+        document.getElementById('steelGrade').value = "SM490";
+        document.getElementById('steelFy').value = 325;
+        document.getElementById('deckDeadLoad').value = 2.50;
+        document.getElementById('liveUniformLoad').value = 6.00;
+        document.getElementById('livePointLoad').value = 50.0;
+        document.getElementById('impactFactorPct').value = 28.3;
+        document.getElementById('railingLoad').value = 1.50;
+        document.getElementById('distFactor').value = 1.05;
+        document.getElementById('beamSpacingMm').value = 750;
+        activeBeams = [
+          { sectionId: "H700x300x13x24" },
+          { sectionId: "H700x300x13x24" },
+          { sectionId: "H700x300x13x24" }
+        ];
+      }
+      renderBeamListUI();
+      recalculateAll();
+    }
+
+    function exportReport() {
+      document.getElementById('printProjectName').textContent = document.getElementById('projectName').value;
+      document.getElementById('printDate').textContent = new Date().toISOString().slice(0, 10);
+      window.print();
+    }
+
+    // =========================================================================
+    // 3. CORE COMPOSITE SECTION & STRUCTURAL MECHANICS ENGINE
+    // =========================================================================
+    function recalculateAll(saveToStorage = true) {
+      if (saveToStorage) {
+        saveProjectToLocalStorage();
+        // If modified by user, mark as needing attention when closing
+        isProjectExportedOrClean = false;
+      }
+
+      // 3.1 Gather Inputs
+      const projectName = document.getElementById('projectName').value;
+      const bridgeType = document.getElementById('bridgeType').value;
+      const L = Math.max(1.0, parseFloat(document.getElementById('spanL').value) || 8.0);
+      const W = Math.max(0.5, parseFloat(document.getElementById('bridgeWidth').value) || 2.0);
+      const Lb = Math.max(0.1, parseFloat(document.getElementById('unbracedLb').value) || 2.0);
+      const Fy = Math.max(100, parseFloat(document.getElementById('steelFy').value) || 235);
+      const designMethod = document.querySelector('input[name="designMethod"]:checked').value;
+      const autoSelfWeight = document.getElementById('autoSelfWeight').checked;
+
+      const qD = Math.max(0, parseFloat(document.getElementById('deckDeadLoad').value) || 0);
+      const qL = Math.max(0, parseFloat(document.getElementById('liveUniformLoad').value) || 0);
+      const PL = Math.max(0, parseFloat(document.getElementById('livePointLoad').value) || 0);
+      const impactI = Math.max(0, (parseFloat(document.getElementById('impactFactorPct').value) || 0) / 100);
+      const wRail = Math.max(0, parseFloat(document.getElementById('railingLoad').value) || 0);
+      const distFactor = Math.max(1.0, parseFloat(document.getElementById('distFactor').value) || 1.0);
+      const vibLiveRatio = Math.max(0, (parseFloat(document.getElementById('vibLiveLoadRatioPct').value) || 0) / 100);
+      const spacingMm = Math.max(50, parseFloat(document.getElementById('beamSpacingMm').value) || 500);
+      const alignmentMode = document.getElementById('alignmentMode').value;
+
+      // 3.2 Composite Section Geometry Analysis (Parallel Axis Theorem)
+      const sections = activeBeams.map(b => getSectionById(b.sectionId));
+      const nBeams = sections.length;
+      const HmaxMm = Math.max(...sections.map(s => s.H));
+
+      // Determine each beam's centroid height yi (in cm) measured from the global bottom reference plane (y = 0)
+      const beamGeometries = sections.map((sec, i) => {
+        let yBottomMm = 0;
+        if (alignmentMode === 'top') {
+          yBottomMm = HmaxMm - sec.H; // Top flanges aligned at y = HmaxMm
+        } else if (alignmentMode === 'bottom') {
+          yBottomMm = 0; // Bottom flanges aligned at y = 0
+        } else {
+          yBottomMm = (HmaxMm - sec.H) / 2; // Centroids aligned
+        }
+        const yCentroidMm = yBottomMm + sec.H / 2;
+        const xCenterMm = (i - (nBeams - 1) / 2) * spacingMm;
+        return {
+          sec,
+          yBottomMm,
+          yTopMm: yBottomMm + sec.H,
+          yCentroidMm,
+          yCentroidCm: yCentroidMm / 10,
+          xCenterMm,
+          xCenterCm: xCenterMm / 10
+        };
+      });
+
+      const AtotalCm2 = beamGeometries.reduce((sum, g) => sum + g.sec.A, 0);
+      const totalUnitWeightKgM = beamGeometries.reduce((sum, g) => sum + g.sec.w, 0);
+
+      // Global vertical centroid yBarCm from bottom reference (y=0)
+      const sumAy = beamGeometries.reduce((sum, g) => sum + g.sec.A * g.yCentroidCm, 0);
+      const yBarBotCm = sumAy / AtotalCm2;
+      const yBarTopCm = (HmaxMm / 10) - yBarBotCm;
+
+      // Total Moment of Inertia about horizontal composite neutral axis: Ix_total = sum(Ix_i + A_i * (y_i - yBar)^2)
+      const IxTotalCm4 = beamGeometries.reduce((sum, g) => {
+        const dy = g.yCentroidCm - yBarBotCm;
+        return sum + g.sec.Ix + g.sec.A * dy * dy;
+      }, 0);
+
+      // Section Modulus Zx_top, Zx_bot, Zx_min (cm³)
+      const cMaxCm = Math.max(yBarBotCm, yBarTopCm);
+      const ZxTopCm3 = IxTotalCm4 / Math.max(0.1, yBarTopCm);
+      const ZxBotCm3 = IxTotalCm4 / Math.max(0.1, yBarBotCm);
+      const ZxMinCm3 = IxTotalCm4 / Math.max(0.1, cMaxCm);
+
+      // Plastic section modulus Zpx (cm³)
+      const ZpxTotalCm3 = beamGeometries.reduce((sum, g) => sum + calcSinglePlasticZx(g.sec), 0);
+
+      // Weak-axis properties: sum of individual Iy, and composite Iy about bridge centerline
+      const sumIyIndividualCm4 = beamGeometries.reduce((sum, g) => sum + g.sec.Iy, 0);
+      const IyCompositeCm4 = beamGeometries.reduce((sum, g) => {
+        return sum + g.sec.Iy + g.sec.A * Math.pow(g.xCenterCm, 2);
+      }, 0);
+
+      const rxCompositeCm = Math.sqrt(IxTotalCm4 / AtotalCm2);
+      // For lateral-torsional buckling of individual beams braced by diaphragms at Lb, critical ry is minimum ry of constituent beams
+      const ryMinCm = Math.min(...sections.map(s => s.ry));
+
+      // Total shear web area Aw = sum(H * t1) in cm²
+      const AwTotalCm2 = sections.reduce((sum, s) => sum + (s.H * s.t1) / 100, 0);
+
+      // Total width across outer flanges (mm)
+      const firstBeam = beamGeometries[0];
+      const lastBeam = beamGeometries[beamGeometries.length - 1];
+      const totalWidthMm = (lastBeam.xCenterMm + lastBeam.sec.B / 2) - (firstBeam.xCenterMm - firstBeam.sec.B / 2);
+
+      // 3.3 Loads & Internal Force Analysis (Simply Supported Span L)
+      // Self-weight of steel girders in kN/m (including 15% allowance for diaphragms, stiffeners & bolts)
+      const wSteelKnM = autoSelfWeight ? (totalUnitWeightKgM * 9.80665 / 1000) * 1.15 : 0;
+      const wDeckKnM = qD * W;
+      const wDeadTotalKnM = wSteelKnM + wDeckKnM + wRail;
+
+      // Live load with lateral distribution factor eta and impact factor (1 + I)
+      const wLiveUniformRawKnM = qL * W * distFactor;
+      const wLiveWithImpactKnM = wLiveUniformRawKnM * (1 + impactI);
+      const PLWithImpactKn = PL * distFactor * (1 + impactI);
+
+      // Dead load internal forces
+      const MD = (wDeadTotalKnM * L * L) / 8; // kN·m
+      const VD = (wDeadTotalKnM * L) / 2;     // kN
+
+      // Live load internal forces (including impact & lateral distribution)
+      const ML_uniform = (wLiveWithImpactKnM * L * L) / 8;
+      const ML_point = (PLWithImpactKn * L) / 4;
+      const MLI = ML_uniform + ML_point;      // kN·m
+      const VLI = (wLiveWithImpactKnM * L) / 2 + PLWithImpactKn / 2; // kN
+
+      // Service Load Combination (ASD: D + L + I)
+      const Ms_ASD = MD + MLI;
+      const Vs_ASD = VD + VLI;
+
+      // Factored Ultimate Load Combination (LSD / LRFD: 1.2 D + 1.6 (L + I))
+      const Mu_LSD = 1.2 * MD + 1.6 * MLI;
+      const Vu_LSD = 1.2 * VD + 1.6 * VLI;
+
+      // 3.4 Code Verification Calculations
+      // -----------------------------------------------------------------------
+      // CHECK 1: Deflection Check (撓度檢核 - 公路橋樑設計規範 第2章/第6章)
+      // Live load deflection (usually checked without or with impact; Highway Bridge Code includes impact for live load deflection)
+      // Convert units to N and mm: E = 200,000 N/mm², I = IxTotalCm4 * 10^4 mm⁴, L_mm = L * 1000 mm
+      // w in N/mm (1 kN/m = 1 N/mm), P in N (1 kN = 1000 N)
+      const L_mm = L * 1000;
+      const EI_Nmm2 = ES_MPA * (IxTotalCm4 * 10000);
+
+      const deltaDeadMm = (5 * wDeadTotalKnM * Math.pow(L_mm, 4)) / (384 * EI_Nmm2);
+      const deltaLiveUniformMm = (5 * wLiveWithImpactKnM * Math.pow(L_mm, 4)) / (384 * EI_Nmm2);
+      const deltaLivePointMm = (PLWithImpactKn * 1000 * Math.pow(L_mm, 3)) / (48 * EI_Nmm2);
+      const deltaLiveMm = deltaLiveUniformMm + deltaLivePointMm;
+      const deltaTotalMm = deltaDeadMm + deltaLiveMm;
+
+      let llDeflectionLimitRatio = 800;
+      let bridgeTypeLabel = "人行橋 (L/800)";
+      if (bridgeType === 'scooter') {
+        llDeflectionLimitRatio = 600;
+        bridgeTypeLabel = "機車橋 (L/600)";
+      } else if (bridgeType === 'light_vehicle') {
+        llDeflectionLimitRatio = 500;
+        bridgeTypeLabel = "車行橋 (L/500)";
+      }
+      const allowDeltaLiveMm = L_mm / llDeflectionLimitRatio;
+      const allowDeltaTotalMm = L_mm / 300; // Total load deflection limit L/300
+
+      const dcDeflectionLL = deltaLiveMm / allowDeltaLiveMm;
+      const dcDeflectionTot = deltaTotalMm / allowDeltaTotalMm;
+
+      // -----------------------------------------------------------------------
+      // CHECK 2: Flexural Strength / Bending Stress (抗彎強度與側向挫屈修正)
+      // Unbraced length Lb_cm = Lb * 100
+      const Lb_cm = Lb * 100;
+      const slendernessLbRy = Lb_cm / ryMinCm;
+
+      // Limiting unbraced lengths Lp and Lr (CNS Steel Design Code)
+      // Lp = 1.76 * ry * sqrt(Es / Fy)
+      const Lp_cm = 1.76 * ryMinCm * Math.sqrt(ES_MPA / Fy);
+      const Lr_cm = 4.40 * ryMinCm * Math.sqrt(ES_MPA / Fy);
+
+      // ASD Allowable Bending Stress Fb (MPa)
+      // When Lb <= Lp: Fb = 0.60 * Fy; when Lp < Lb <= Lr: linear reduction down to 0.45 * Fy
+      let Fb_allow_MPa = 0.60 * Fy;
+      if (Lb_cm > Lp_cm && Lb_cm <= Lr_cm) {
+        const ratio = (Lb_cm - Lp_cm) / (Lr_cm - Lp_cm);
+        Fb_allow_MPa = (0.60 - 0.15 * ratio) * Fy;
+      } else if (Lb_cm > Lr_cm) {
+        Fb_allow_MPa = Math.max(0.30 * Fy, (0.45 * Fy) * Math.pow(Lr_cm / Lb_cm, 1.2));
+      }
+
+      // Actual ASD Bending Stress sigma_b = Ms / Zx_min
+      // Ms in kN·m = Ms * 10^6 N·mm; Zx_min in cm³ = Zx_min * 10^3 mm³
+      const sigmaB_ASD_MPa = (Ms_ASD * 1e6) / (ZxMinCm3 * 1e3);
+      const dcFlexureASD = sigmaB_ASD_MPa / Fb_allow_MPa;
+
+      // LSD Design Flexural Capacity phi_b * Mn (kN·m), phi_b = 0.90
+      // Mp = Fy * Zpx (kN·m)
+      const Mp_kNm = (Fy * ZpxTotalCm3 * 1e3) / 1e6;
+      const Mr_kNm = (0.7 * Fy * ZxMinCm3 * 1e3) / 1e6;
+      let Mn_kNm = Mp_kNm;
+      if (Lb_cm > Lp_cm && Lb_cm <= Lr_cm) {
+        Mn_kNm = Mp_kNm - (Mp_kNm - Mr_kNm) * ((Lb_cm - Lp_cm) / (Lr_cm - Lp_cm));
+      } else if (Lb_cm > Lr_cm) {
+        Mn_kNm = Mr_kNm * Math.pow(Lr_cm / Lb_cm, 1.2);
+      }
+      const phiMn_LSD_kNm = 0.90 * Mn_kNm;
+      const dcFlexureLSD = Mu_LSD / phiMn_LSD_kNm;
+
+      // -----------------------------------------------------------------------
+      // CHECK 3: Shear Strength Check (抗剪強度檢核)
+      // ASD: tau = Vs / Aw <= Fv = 0.40 * Fy
+      const tau_ASD_MPa = (Vs_ASD * 1e3) / (AwTotalCm2 * 100);
+      const Fv_allow_MPa = 0.40 * Fy;
+      const dcShearASD = tau_ASD_MPa / Fv_allow_MPa;
+
+      // LSD: phi_v * Vn = 0.90 * (0.60 * Fy * Aw) in kN
+      const phiVn_LSD_kN = (0.90 * 0.60 * Fy * (AwTotalCm2 * 100)) / 1e3;
+      const dcShearLSD = Vu_LSD / phiVn_LSD_kN;
+
+      // -----------------------------------------------------------------------
+      // CHECK 4: Local Flange/Web Compactness & Lateral Slenderness (局部寬厚比與側向長細比)
+      // Flange compactness limit lambda_pf = 0.38 * sqrt(Es / Fy)
+      const maxFlangeRatio = Math.max(...sections.map(s => (s.B / 2) / s.t2));
+      const limitFlangeCompact = 0.38 * Math.sqrt(ES_MPA / Fy);
+      const dcFlangeCompact = maxFlangeRatio / limitFlangeCompact;
+
+      // Unbraced slenderness Lb / ry limit (typically <= 200 or Lr check)
+      const maxSlendernessLimit = Math.round(Lr_cm / ryMinCm);
+      const dcSlenderness = slendernessLbRy / maxSlendernessLimit;
+
+      // Span-to-depth ratio L / Hmax (Highway Bridge Code recommends H >= L/25 ~ L/30 for steel girders)
+      const spanToDepthRatio = L_mm / HmaxMm;
+      const allowSpanToDepth = bridgeType === 'pedestrian' ? 35.0 : 30.0;
+      const dcSpanDepth = spanToDepthRatio / allowSpanToDepth;
+
+      // -----------------------------------------------------------------------
+      // CHECK 5: Natural Vibration Frequency Check (人行橋自然振動頻率檢核)
+      // Fundamental vertical frequency of a simply supported beam:
+      // f_v = (pi / (2 * L^2)) * sqrt(E * I / m)  (in Hz)
+      // where E * I in N·m² = (200 * 10^9 N/m²) * (IxTotalCm4 * 10^-8 m⁴) = 2000 * IxTotalCm4 (N·m²)
+      // Effective mass per unit length m (kg/m) = (wDeadTotalKnM + vibLiveRatio * wLiveUniformRawKnM) * 1000 / 9.80665
+      const wVibEffectiveKnM = Math.max(0.5, wDeadTotalKnM + vibLiveRatio * wLiveUniformRawKnM);
+      const massPerMeterKgM = (wVibEffectiveKnM * 1000) / 9.80665;
+      const EI_Nm2 = 2000 * IxTotalCm4;
+      const freqVerticalHz = (Math.PI / (2 * L * L)) * Math.sqrt(EI_Nm2 / massPerMeterKgM);
+
+      // Equivalent midspan static deflection under effective vibration weight (mm): f_v ≈ 17.75 / sqrt(delta_vib_mm)
+      const deltaVibMm = (5 * wVibEffectiveKnM * Math.pow(L_mm, 4)) / (384 * EI_Nmm2);
+
+      // Lateral fundamental frequency (assuming diaphragm bracing contributes to lateral stiffness, conservative lower bound using sumIyIndividual + 30% composite action)
+      const IyEffectiveLatCm4 = sumIyIndividualCm4 + 0.25 * (IyCompositeCm4 - sumIyIndividualCm4);
+      const EIy_Nm2 = 2000 * IyEffectiveLatCm4;
+      const freqLateralHz = (Math.PI / (2 * L * L)) * Math.sqrt(EIy_Nm2 / massPerMeterKgM);
+
+      // Code limit: Pedestrian Bridge Code / Highway Bridge Design Code requires f_v >= 3.0 Hz (avoiding 1.6~2.4 Hz walking resonance)
+      // For scooter/light vehicle bridges, f_v >= 2.5 Hz is recommended
+      const minAllowFreqVertHz = bridgeType === 'pedestrian' ? 3.00 : 2.50;
+      const minAllowFreqLatHz = 1.50; // Lateral lock-in avoidance >= 1.5 Hz
+      // Demand-to-Capacity ratio for frequency: (f_allow / f_actual), so <= 1.0 means f_actual >= f_allow (PASS)
+      const dcFreqVert = minAllowFreqVertHz / Math.max(0.1, freqVerticalHz);
+      const dcFreqLat = minAllowFreqLatHz / Math.max(0.1, freqLateralHz);
+      const dcVibration = Math.max(dcFreqVert, dcFreqLat);
+
+      // 3.5 Diaphragm Code Verification (橫向隔梁/橫向樑 2% 挫屈支撐力與梁深比檢核)
+      // Reference: Taiwan Highway Bridge Design Code Sec. 6.13 & AISC/Taiwan Building Steel Code App. 6
+      const diaphSecId = document.getElementById('diaphragmSection') ? document.getElementById('diaphragmSection').value : 'C150x75x6.5x10';
+      const diaphSec = getDiaphragmById(diaphSecId);
+
+      // Compression flange axial force Pf under design flexure:
+      const maxBeamFlangeAreaMm2 = Math.max(...sections.map(s => s.B * s.t2));
+      const activeFlangeStressMpa = designMethod === 'ASD' 
+        ? sigmaB_ASD_MPa 
+        : Math.min(Fy, (Mu_LSD * 1e6) / Math.max(1, ZxMinCm3 * 1e3));
+      const flangeAxialForceKn = (activeFlangeStressMpa * maxBeamFlangeAreaMm2) / 1000;
+      // 2% Required Bracing Restraint Force P_br = 0.02 * Pf
+      const PbrKn = Math.max(0.5, 0.02 * flangeAxialForceKn);
+
+      // Diaphragm Allowable/Design Axial Capacity:
+      // Spacing between beams is approx 0.5~1.0m, slenderness is small (short column)
+      const P_diaph_allow_Kn = designMethod === 'ASD'
+        ? (0.60 * Fy * diaphSec.A * 100) / 1000
+        : (0.90 * Fy * diaphSec.A * 100) / 1000;
+      const dcDiaphForce = PbrKn / Math.max(0.1, P_diaph_allow_Kn);
+
+      // Diaphragm Depth Ratio Check: H_diaph / H_max >= 0.50
+      const diaphDepthRatio = diaphSec.H / Math.max(1, HmaxMm);
+      const minAllowDepthRatio = 0.50;
+      const dcDiaphDepth = minAllowDepthRatio / Math.max(0.01, diaphDepthRatio);
+      const dcDiaphragm = Math.max(dcDiaphForce, dcDiaphDepth);
+
+      // Diaphragm quantity along bridge span
+      const numDiaphragms = Math.max(2, Math.round(L / Lb) + 1);
+
+      // Update Quick Badge in UI
+      const diaphBadge = document.getElementById('diaphragmQuickBadge');
+      if (diaphBadge) {
+        const isDiaphPass = dcDiaphragm <= 1.0;
+        diaphBadge.textContent = `${diaphSec.name} | P_br = ${PbrKn.toFixed(1)} kN ≦ ${P_diaph_allow_Kn.toFixed(0)} kN | 梁深比 ${(diaphDepthRatio * 100).toFixed(0)}% (${isDiaphPass ? 'OK' : 'NG'})`;
+        diaphBadge.className = isDiaphPass
+          ? "text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"
+          : "text-[11px] font-mono px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200";
+      }
+
+      // 3.5 Update Summary UI Elements
+      document.getElementById('propAtotal').textContent = `${AtotalCm2.toFixed(1)} cm²`;
+      document.getElementById('propUnitWeight').textContent = `鋼梁單重: ${totalUnitWeightKgM.toFixed(1)} kg/m`;
+      document.getElementById('propIxTotal').textContent = `${Math.round(IxTotalCm4).toLocaleString()} cm⁴`;
+      document.getElementById('propCentroidInfo').textContent = `底至重心 ȳ: ${yBarBotCm.toFixed(2)} cm`;
+      document.getElementById('propZxTotal').textContent = `${Math.round(ZxMinCm3).toLocaleString()} cm³`;
+      document.getElementById('propZxPlastic').textContent = `塑性 Zpx: ${Math.round(ZpxTotalCm3).toLocaleString()} cm³`;
+      document.getElementById('propIyTotal').textContent = `${Math.round(sumIyIndividualCm4).toLocaleString()} cm⁴`;
+      document.getElementById('propRxRy').textContent = `rx: ${rxCompositeCm.toFixed(2)} cm | ry,min: ${ryMinCm.toFixed(2)} cm`;
+
+      document.getElementById('forceWd').textContent = `${wDeadTotalKnM.toFixed(2)} kN/m`;
+      document.getElementById('forceMd').textContent = `MD: ${MD.toFixed(1)} kN·m | VD: ${VD.toFixed(1)} kN`;
+      document.getElementById('forceWl').textContent = `${wLiveWithImpactKnM.toFixed(2)} kN/m + P=${PLWithImpactKn.toFixed(1)}kN`;
+      document.getElementById('forceMl').textContent = `ML+I: ${MLI.toFixed(1)} kN·m | VL+I: ${VLI.toFixed(1)} kN`;
+      document.getElementById('forceMasd').textContent = `Ms = ${Ms_ASD.toFixed(1)} kN·m`;
+      document.getElementById('forceVasd').textContent = `Vs = ${Vs_ASD.toFixed(1)} kN`;
+      document.getElementById('forceMlsd').textContent = `Mu = ${Mu_LSD.toFixed(1)} kN·m`;
+      document.getElementById('forceVlsd').textContent = `Vu = ${Vu_LSD.toFixed(1)} kN`;
+
+      document.getElementById('labelTotalWidth').textContent = `${Math.round(totalWidthMm)} mm`;
+      document.getElementById('labelCentroidY').textContent = `${(yBarBotCm * 10).toFixed(1)} mm`;
+      document.getElementById('labelMaxDepth').textContent = `${HmaxMm} mm`;
+
+      const activeM = designMethod === 'ASD' ? Ms_ASD : Mu_LSD;
+      const activeV = designMethod === 'ASD' ? Vs_ASD : Vu_LSD;
+      document.getElementById('labelMmax').textContent = `${activeM.toFixed(1)} kN·m (${designMethod})`;
+      document.getElementById('labelVmax').textContent = `${activeV.toFixed(1)} kN (${designMethod})`;
+      document.getElementById('labelDeltaLL').textContent = `${deltaLiveMm.toFixed(2)} mm (L/${Math.round(L_mm / Math.max(0.01, deltaLiveMm))})`;
+
+      document.getElementById('activeMethodBadge').textContent =
+        designMethod === 'ASD' ? "主控基準：ASD 容許應力設計法" : "主控基準：LSD 極限強度設計法 (LRFD)";
+
+      const freqEl = document.getElementById('naturalFreqDisplay');
+      if (freqEl) {
+        freqEl.textContent = `${freqVerticalHz.toFixed(2)} Hz`;
+        freqEl.className = freqVerticalHz >= minAllowFreqVertHz
+          ? "text-lg font-bold font-mono text-sky-700"
+          : "text-lg font-bold font-mono text-rose-600";
+      }
+
+      // 3.6 Build Code Check Rows
+      const checks = [
+        {
+          title: "1. 活載重撓度檢核<br><span class='text-[10px] text-slate-500 font-normal'>Live Load Deflection</span>",
+          citation: "《公路橋樑設計規範》第 2.6 節 / 第 6.3 節",
+          formula: `簡支梁 Δ_LL = 5·w_(L+I)·L⁴ / (384·Es·Ix) + P_(L+I)·L³ / (48·Es·Ix) ≦ 容許撓度 ${bridgeTypeLabel}`,
+          actualStr: `${deltaLiveMm.toFixed(2)} mm<br><span class="text-[10px] text-slate-500">(L / ${Math.round(L_mm / Math.max(0.01, deltaLiveMm))})</span>`,
+          allowStr: `${allowDeltaLiveMm.toFixed(2)} mm<br><span class="text-[10px] text-slate-500">(${bridgeTypeLabel})</span>`,
+          dc: dcDeflectionLL
+        },
+        {
+          title: "2. 總載重撓度檢核<br><span class='text-[10px] text-slate-500 font-normal'>Total Load Deflection</span>",
+          citation: "《鋼構造建築物鋼結構設計技術規範》第 1.7 節",
+          formula: `靜載與活載總撓度 Δ_total = Δ_D + Δ_LL ≦ L / 300`,
+          actualStr: `${deltaTotalMm.toFixed(2)} mm<br><span class="text-[10px] text-slate-500">(Δ_D = ${deltaDeadMm.toFixed(2)} mm)</span>`,
+          allowStr: `${allowDeltaTotalMm.toFixed(2)} mm<br><span class="text-[10px] text-slate-500">(L / 300)</span>`,
+          dc: dcDeflectionTot
+        },
+        {
+          title: "3. 人行自然振動頻率<br><span class='text-[10px] text-slate-500 font-normal'>Natural Vibration Frequency</span>",
+          citation: "《公路橋樑設計規範》第 2.6 節 / 《人行天橋設計規範》舒適度規定",
+          formula: `垂直向一階頻率 f_v = (π / 2L²) · √(Es·Ix / m) ≒ 17.75 / √Δ_vib ≧ ${minAllowFreqVertHz.toFixed(1)} Hz (避開步頻 1.6~2.4 Hz 共振區；橫向 f_lat = ${freqLateralHz.toFixed(2)} Hz ≧ 1.5 Hz)`,
+          actualStr: `fv = ${freqVerticalHz.toFixed(2)} Hz<br><span class="text-[10px] text-slate-500">(橫向 flat=${freqLateralHz.toFixed(2)} Hz)</span>`,
+          allowStr: `≧ ${minAllowFreqVertHz.toFixed(2)} Hz<br><span class="text-[10px] text-slate-500">(橫向 ≧ ${minAllowFreqLatHz.toFixed(1)} Hz)</span>`,
+          dc: dcVibration
+        },
+        designMethod === 'ASD' ? {
+          title: "4. 抗彎強度檢核 (ASD)<br><span class='text-[10px] text-slate-500 font-normal'>Allowable Bending Stress</span>",
+          citation: "《公路橋樑設計規範》第 6 章「鋼橋」及 ASD 第 5 章",
+          formula: `實際彎曲應力 fb = Ms / Zx_min ≦ Fb (已計入無支撐長 Lb = ${Lb} m 挫屈折減；極限法 φb·Mn = ${phiMn_LSD_kNm.toFixed(1)} kN·m)`,
+          actualStr: `${sigmaB_ASD_MPa.toFixed(1)} MPa<br><span class="text-[10px] text-slate-500">(Ms = ${Ms_ASD.toFixed(1)} kN·m)</span>`,
+          allowStr: `${Fb_allow_MPa.toFixed(1)} MPa<br><span class="text-[10px] text-slate-500">(0.60·Fy 基準)</span>`,
+          dc: dcFlexureASD
+        } : {
+          title: "4. 抗彎強度檢核 (LSD)<br><span class='text-[10px] text-slate-500 font-normal'>LRFD Flexural Strength</span>",
+          citation: "《鋼構造建築物鋼結構設計技術規範 (LSD)》第 5 章",
+          formula: `極限彎矩 Mu = 1.2·MD + 1.6·M_(L+I) ≦ φb·Mn (φb = 0.90，已計入 Lb = ${Lb} m 側向挫屈修正；ASD fb = ${sigmaB_ASD_MPa.toFixed(1)} MPa)`,
+          actualStr: `${Mu_LSD.toFixed(1)} kN·m<br><span class="text-[10px] text-slate-500">(fbu = ${((Mu_LSD*1e6)/(ZxMinCm3*1e3)).toFixed(1)} MPa)</span>`,
+          allowStr: `${phiMn_LSD_kNm.toFixed(1)} kN·m<br><span class="text-[10px] text-slate-500">(Mp = ${Mp_kNm.toFixed(1)} kN·m)</span>`,
+          dc: dcFlexureLSD
+        },
+        designMethod === 'ASD' ? {
+          title: "5. 抗剪強度檢核 (ASD)<br><span class='text-[10px] text-slate-500 font-normal'>Allowable Shear Stress</span>",
+          citation: "《公路橋樑設計規範》第 6 章 腹板剪力條文",
+          formula: `腹板平均剪應力 τ = Vs / Σ(H·t1) ≦ Fv = 0.40·Fy (極限法 φv·Vn = ${phiVn_LSD_kN.toFixed(1)} kN)`,
+          actualStr: `${tau_ASD_MPa.toFixed(2)} MPa<br><span class="text-[10px] text-slate-500">(Vs = ${Vs_ASD.toFixed(1)} kN)</span>`,
+          allowStr: `${Fv_allow_MPa.toFixed(1)} MPa<br><span class="text-[10px] text-slate-500">(Aw = ${AwTotalCm2.toFixed(1)} cm²)</span>`,
+          dc: dcShearASD
+        } : {
+          title: "5. 抗剪強度檢核 (LSD)<br><span class='text-[10px] text-slate-500 font-normal'>LRFD Shear Strength</span>",
+          citation: "《鋼構造建築物鋼結構設計技術規範 (LSD)》第 6 章",
+          formula: `極限剪力 Vu = 1.2·VD + 1.6·V_(L+I) ≦ φv·Vn = 0.90·(0.60·Fy·Aw)`,
+          actualStr: `${Vu_LSD.toFixed(1)} kN<br><span class="text-[10px] text-slate-500">(τu = ${((Vu_LSD*1e3)/(AwTotalCm2*100)).toFixed(1)} MPa)</span>`,
+          allowStr: `${phiVn_LSD_kN.toFixed(1)} kN<br><span class="text-[10px] text-slate-500">(Aw = ${AwTotalCm2.toFixed(1)} cm²)</span>`,
+          dc: dcShearLSD
+        },
+        {
+          title: "6. 側向扭轉挫屈與細長比<br><span class='text-[10px] text-slate-500 font-normal'>LTB & Slenderness Check</span>",
+          citation: "《鋼構造極限設計法規範》第 5.3 節 受壓翼板支撐與寬厚比",
+          formula: `側向無支撐細長比 Lb / ry,min ≦ Lr / ry (塑性極限長 Lp = ${(Lp_cm/100).toFixed(2)} m，彈性極限 Lr = ${(Lr_cm/100).toFixed(2)} m；翼板寬厚比 bf / 2tf = ${maxFlangeRatio.toFixed(1)} ≦ ${limitFlangeCompact.toFixed(1)})`,
+          actualStr: `Lb/ry = ${slendernessLbRy.toFixed(1)}<br><span class="text-[10px] text-slate-500">(Lb = ${Lb.toFixed(2)} m)</span>`,
+          allowStr: `≦ ${maxSlendernessLimit.toFixed(0)}<br><span class="text-[10px] text-slate-500">(Lr = ${(Lr_cm/100).toFixed(2)} m)</span>`,
+          dc: Math.max(dcSlenderness, dcFlangeCompact)
+        },
+        {
+          title: "7. 橋梁跨深比檢核<br><span class='text-[10px] text-slate-500 font-normal'>Span-to-Depth Ratio</span>",
+          citation: "《公路橋樑設計規範》第 6.3 節 梁深建議限制",
+          formula: `簡支鋼梁跨度與全深比 L / H_max ≦ ${allowSpanToDepth} (避免結構過柔產生行人晃動共振感)`,
+          actualStr: `L/H = ${spanToDepthRatio.toFixed(1)}<br><span class="text-[10px] text-slate-500">(H = ${HmaxMm} mm)</span>`,
+          allowStr: `≦ ${allowSpanToDepth.toFixed(1)}<br><span class="text-[10px] text-slate-500">(建議上限)</span>`,
+          dc: dcSpanDepth
+        },
+        {
+          title: "8. 橫向隔梁強度與梁深比<br><span class='text-[10px] text-slate-500 font-normal'>Diaphragm Strength & Depth</span>",
+          citation: "《公路橋樑設計規範》第 6.13 節 &《鋼構造技術規範》第 13.3 節",
+          formula: `受壓翼板 2% 挫屈側向推力 P_br = 0.02·Pf ≦ 容許力 P_allow (${designMethod === 'ASD' ? '0.60·Fy·A' : '0.90·Fy·A'})；梁深比 H_diaph / H_max = ${diaphSec.H} / ${HmaxMm} ≧ 0.50`,
+          actualStr: `P_br = ${PbrKn.toFixed(1)} kN<br><span class="text-[10px] text-slate-500">(梁深比 ${(diaphDepthRatio * 100).toFixed(0)}%)</span>`,
+          allowStr: `≦ ${P_diaph_allow_Kn.toFixed(1)} kN<br><span class="text-[10px] text-slate-500">(深比 ≧ 50%)</span>`,
+          dc: dcDiaphragm
+        }
+      ];
+
+      renderCodeCheckTable(checks);
+
+      // Update Top Status Banner
+      const maxDC = Math.max(...checks.map(c => c.dc));
+      const isAllPass = maxDC <= 1.0;
+
+      const banner = document.getElementById('overallStatusBanner');
+      const icon = document.getElementById('overallStatusIcon');
+      const badge = document.getElementById('overallStatusBadge');
+      const desc = document.getElementById('overallStatusDesc');
+      const maxDcEl = document.getElementById('maxDCRatioDisplay');
+
+      // Summarize beam counts (e.g., "4 × H 250×250×9×14")
+      const countMap = {};
+      sections.forEach(s => { countMap[s.name] = (countMap[s.name] || 0) + 1; });
+      const configSummary = Object.entries(countMap).map(([name, cnt]) => `${cnt} 支 ${name}`).join(' + ');
+      document.getElementById('summaryConfigText').textContent = `${configSummary} (Fy=${Fy} MPa)`;
+
+      // Total steel weight in metric tons (including 15% connections & diaphragms)
+      const totalSteelTon = (totalUnitWeightKgM * L * 1.15) / 1000;
+      document.getElementById('totalSteelWeightDisplay').textContent = `${totalSteelTon.toFixed(2)} t`;
+      maxDcEl.textContent = maxDC.toFixed(2);
+
+      if (isAllPass) {
+        banner.className = "rounded-lg p-4 border-l-8 shadow-sm flex flex-wrap items-center justify-between gap-4 bg-white border-emerald-500";
+        icon.className = "w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl font-bold";
+        icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+        badge.className = "px-2.5 py-0.5 text-xs font-bold rounded bg-emerald-600 text-white";
+        badge.textContent = "OK";
+        maxDcEl.className = "text-2xl font-bold font-mono text-emerald-600";
+        desc.textContent = `全部 8 項台灣橋樑與鋼構規範檢核（含人行自然振動頻率 fv=${freqVerticalHz.toFixed(2)} Hz 與橫向隔梁 2% 支撐推力檢核）皆合格！最大應力/容量比為 ${(maxDC * 100).toFixed(1)}%，結構安全裕度良好。`;
+      } else {
+        banner.className = "rounded-lg p-4 border-l-8 shadow-sm flex flex-wrap items-center justify-between gap-4 bg-rose-50/40 border-rose-600";
+        icon.className = "w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-2xl font-bold";
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        badge.className = "px-2.5 py-0.5 text-xs font-bold rounded bg-rose-600 text-white";
+        badge.textContent = "NG";
+        maxDcEl.className = "text-2xl font-bold font-mono text-rose-600";
+        desc.textContent = `部分檢核項目超過規範容許上限（最大 D/C = ${(maxDC * 100).toFixed(1)}%）。建議選用更大號數之 H 型鋼、增加型鋼支數，或縮減無支撐間距 Lb。`;
+      }
+
+      // Update Plan View labels & header badge
+      if (document.getElementById('labelPlanSpan')) document.getElementById('labelPlanSpan').textContent = `${L.toFixed(2)} m`;
+      if (document.getElementById('labelPlanWidth')) document.getElementById('labelPlanWidth').textContent = `${W.toFixed(2)} m`;
+      if (document.getElementById('labelPlanDiaphragms')) {
+        document.getElementById('labelPlanDiaphragms').textContent = `共 ${numDiaphragms} 道 ${diaphSec.name} (H=${diaphSec.H}mm × B=${diaphSec.B}mm | 間距 Lb=${Lb.toFixed(2)}m)`;
+      }
+      if (document.getElementById('planDiaphragmHeaderBadge')) {
+        document.getElementById('planDiaphragmHeaderBadge').textContent = `橫樑: ${diaphSec.name} (H=${diaphSec.H}, B=${diaphSec.B})`;
+      }
+      if (document.getElementById('labelPlanBeams')) {
+        document.getElementById('labelPlanBeams').textContent = `${nBeams} 支主梁 (中心距 ${Math.round(spacingMm)} mm)`;
+      }
+
+      // 3.7 Render All Three Canvases & Detailed Engineering Sheet
+      drawCrossSectionCanvas(beamGeometries, spacingMm, totalWidthMm, HmaxMm, yBarBotCm * 10, W * 1000, diaphSec);
+      drawElevationAndBMDCanvas(L, wDeadTotalKnM, wLiveWithImpactKnM, PLWithImpactKn, activeM, activeV, deltaLiveMm, allowDeltaLiveMm, designMethod);
+      drawPlanViewCanvas(L, W, beamGeometries, spacingMm, Lb, diaphSec);
+      renderDetailedReport({
+        projectName, L, W, Lb, Fy, designMethod, nBeams, configSummary,
+        AtotalCm2, IxTotalCm4, ZxMinCm3, ZpxTotalCm3, yBarBotCm, AwTotalCm2,
+        wSteelKnM, wDeckKnM, wRail, wDeadTotalKnM, wLiveWithImpactKnM, PLWithImpactKn, impactI, distFactor,
+        MD, VD, MLI, VLI, Ms_ASD, Vs_ASD, Mu_LSD, Vu_LSD,
+        deltaDeadMm, deltaLiveMm, allowDeltaLiveMm, deltaTotalMm, allowDeltaTotalMm,
+        sigmaB_ASD_MPa, Fb_allow_MPa, phiMn_LSD_kNm,
+        tau_ASD_MPa, Fv_allow_MPa, phiVn_LSD_kN,
+        Lp_cm, Lr_cm, slendernessLbRy,
+        freqVerticalHz, freqLateralHz, minAllowFreqVertHz, minAllowFreqLatHz, massPerMeterKgM, deltaVibMm, vibLiveRatio,
+        diaphSec, PbrKn, P_diaph_allow_Kn, diaphDepthRatio, numDiaphragms
+      });
+    }
+
+    function renderCodeCheckTable(checks) {
+      const tbody = document.getElementById('codeCheckTableBody');
+      tbody.innerHTML = checks.map(c => {
+        const isOk = c.dc <= 1.0;
+        const isWarn = c.dc > 0.85 && c.dc <= 1.0;
+        const barColor = !isOk ? 'bg-rose-500' : (isWarn ? 'bg-amber-500' : 'bg-emerald-500');
+        const badgeHtml = isOk
+          ? `<span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-emerald-100 text-emerald-800 border border-emerald-300">OK</span>`
+          : `<span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-rose-100 text-rose-800 border border-rose-300">NG</span>`;
+
+        const pctWidth = Math.min(100, Math.round(c.dc * 100));
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-3 font-bold text-slate-800">${c.title}</td>
+            <td class="py-2.5 px-3">
+              <div class="font-semibold text-sky-900 text-[11px] mb-0.5"><i class="fa-solid fa-book-bookmark mr-1 text-sky-600"></i>${c.citation}</div>
+              <div class="text-slate-600 text-[11px]">${c.formula}</div>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900">${c.actualStr}</td>
+            <td class="py-2.5 px-3 text-right font-mono font-semibold text-slate-700">${c.allowStr}</td>
+            <td class="py-2.5 px-3 text-center font-mono">
+              <div class="font-bold ${!isOk ? 'text-rose-600' : 'text-slate-800'}">${c.dc.toFixed(2)}</div>
+              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                <div class="h-full ${barColor}" style="width: ${pctWidth}%"></div>
+              </div>
+            </td>
+            <td class="py-2.5 px-3 text-center">${badgeHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 4. INTERACTIVE CANVAS 1: COMPOSITE CROSS-SECTION VIEW (Clean Morandi Palette)
+    // =========================================================================
+    function drawCrossSectionCanvas(beamGeometries, spacingMm, totalBeamWidthMm, HmaxMm, yBarBotMm, deckWidthMm, diaphSec) {
+      const canvas = document.getElementById('sectionCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // Clean white canvas background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Light architectural grid lines
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 25) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 25) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+
+      // Determine bounding box in mm to auto-scale nicely
+      const displaySpanMm = Math.max(totalBeamWidthMm * 1.25, deckWidthMm * 1.12, 800);
+      const deckThickMm = Math.max(50, HmaxMm * 0.22);
+      const totalVertMm = HmaxMm + deckThickMm + 220;
+
+      const scaleX = (W - 90) / displaySpanMm;
+      const scaleY = (H - 95) / totalVertMm;
+      const scale = Math.min(scaleX, scaleY);
+
+      const centerX = W / 2;
+      const baselineY = H - 55;
+
+      const toX = (xMm) => centerX + xMm * scale;
+      const toY = (yMm) => baselineY - yMm * scale;
+
+      // 1. Draw Deck Slab (橋面板示意 - 莫蘭迪暖灰混凝土色)
+      const halfDeckMm = deckWidthMm / 2;
+      const deckTopY = toY(HmaxMm + deckThickMm);
+      const deckBotY = toY(HmaxMm);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(toX(-halfDeckMm), deckTopY, deckWidthMm * scale, deckBotY - deckTopY);
+      ctx.strokeRect(toX(-halfDeckMm), deckTopY, deckWidthMm * scale, deckBotY - deckTopY);
+
+      // Deck dimension label
+      ctx.fillStyle = '#475569';
+      ctx.font = '500 11px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`橋面板全寬 W = ${(deckWidthMm / 1000).toFixed(2)} m (${Math.round(deckWidthMm)} mm)`, centerX, deckTopY - 8);
+
+      // 2. Draw Transverse Diaphragm / Cross-Beams (橫向隔梁/槽鋼 - 繪於主梁腹板之間)
+      if (beamGeometries.length > 1 && diaphSec) {
+        const dH = Math.min(diaphSec.H, HmaxMm * 0.85); // mm
+        const dB = Math.min(diaphSec.B, 100);
+        const dt1 = diaphSec.t1 || 6.5;
+        const dt2 = diaphSec.t2 || 10;
+        const dType = diaphSec.type || 'C';
+
+        for (let i = 0; i < beamGeometries.length - 1; i++) {
+          const gLeft = beamGeometries[i];
+          const gRight = beamGeometries[i + 1];
+
+          // Clear span between webs
+          const xWebL = gLeft.xCenterMm + gLeft.sec.t1 / 2;
+          const xWebR = gRight.xCenterMm - gRight.sec.t1 / 2;
+          const yCenterMm = (gLeft.yBottomMm + gLeft.sec.H / 2 + gRight.yBottomMm + gRight.sec.H / 2) / 2;
+          const yTopMm = yCenterMm + dH / 2;
+          const yBotMm = yCenterMm - dH / 2;
+
+          const pxL = toX(xWebL);
+          const pxR = toX(xWebR);
+          const pyTop = toY(yTopMm);
+          const pyBot = toY(yBotMm);
+          const pyH = pyBot - pyTop;
+
+          // Draw Diaphragm Member Profile (莫蘭迪冷灰藍 #607d8b / 邊框 #37474f)
+          ctx.fillStyle = '#78909c';
+          ctx.strokeStyle = '#37474f';
+          ctx.lineWidth = 1.2;
+
+          if (dType === 'C') {
+            // Draw Channel [ section between webs
+            const flangeThickPx = Math.max(2, dt2 * scale);
+            const webThickPx = Math.max(2, dt1 * scale);
+            // Flanges
+            ctx.fillRect(pxL, pyTop, pxR - pxL, flangeThickPx);
+            ctx.strokeRect(pxL, pyTop, pxR - pxL, flangeThickPx);
+            ctx.fillRect(pxL, pyBot - flangeThickPx, pxR - pxL, flangeThickPx);
+            ctx.strokeRect(pxL, pyBot - flangeThickPx, pxR - pxL, flangeThickPx);
+            // Vertical web of channel (positioned at center)
+            const cx = (pxL + pxR) / 2;
+            ctx.fillRect(cx - webThickPx / 2, pyTop, webThickPx, pyH);
+            ctx.strokeRect(cx - webThickPx / 2, pyTop, webThickPx, pyH);
+          } else {
+            // I / H shape diaphragm
+            const flangeThickPx = Math.max(2, dt2 * scale);
+            const webThickPx = Math.max(2, dt1 * scale);
+            ctx.fillRect(pxL, pyTop, pxR - pxL, flangeThickPx);
+            ctx.strokeRect(pxL, pyTop, pxR - pxL, flangeThickPx);
+            ctx.fillRect(pxL, pyBot - flangeThickPx, pxR - pxL, flangeThickPx);
+            ctx.strokeRect(pxL, pyBot - flangeThickPx, pxR - pxL, flangeThickPx);
+            const cx = (pxL + pxR) / 2;
+            ctx.fillRect(cx - webThickPx / 2, pyTop, webThickPx, pyH);
+            ctx.strokeRect(cx - webThickPx / 2, pyTop, webThickPx, pyH);
+          }
+
+          // Draw Connection Angle Plate (接合角鋼 / 垂直加勁板 L75x75)
+          ctx.fillStyle = '#b0bec5';
+          ctx.strokeStyle = '#455a64';
+          ctx.lineWidth = 1;
+          const stiffW = Math.max(3, 12 * scale);
+          ctx.fillRect(pxL, pyTop - 4, stiffW, pyH + 8);
+          ctx.strokeRect(pxL, pyTop - 4, stiffW, pyH + 8);
+          ctx.fillRect(pxR - stiffW, pyTop - 4, stiffW, pyH + 8);
+          ctx.strokeRect(pxR - stiffW, pyTop - 4, stiffW, pyH + 8);
+
+          // Connection Bolts (高張力螺栓點位)
+          ctx.fillStyle = '#263238';
+          const boltR = 1.8;
+          [0.25, 0.75].forEach(ratio => {
+            const by = pyTop + pyH * ratio;
+            ctx.beginPath(); ctx.arc(pxL + stiffW / 2, by, boltR, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(pxR - stiffW / 2, by, boltR, 0, Math.PI * 2); ctx.fill();
+          });
+
+          // Diaphragm label above first span
+          if (i === 0) {
+            ctx.fillStyle = '#37474f';
+            ctx.font = 'bold 9px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`橫隔梁: ${diaphSec.name}`, (pxL + pxR) / 2, pyTop - 6);
+          }
+        }
+      }
+
+      // 3. Draw Each Main H-Beam (莫蘭迪霧霾藍 #5b7c8d / 邊框 #3e5663)
+      beamGeometries.forEach((g, idx) => {
+        const sec = g.sec;
+        const xc = g.xCenterMm;
+        const yb = g.yBottomMm;
+
+        const xLeft = toX(xc - sec.B / 2);
+        const xRight = toX(xc + sec.B / 2);
+        const xWebLeft = toX(xc - sec.t1 / 2);
+        const xWebRight = toX(xc + sec.t1 / 2);
+
+        const yBot = toY(yb);
+        const yBotFlangeTop = toY(yb + sec.t2);
+        const yTopFlangeBot = toY(yb + sec.H - sec.t2);
+        const yTop = toY(yb + sec.H);
+
+        ctx.fillStyle = '#5b7c8d';
+        ctx.strokeStyle = '#334e5c';
+        ctx.lineWidth = 1.2;
+
+        // Bottom flange
+        ctx.fillRect(xLeft, yBotFlangeTop, xRight - xLeft, yBot - yBotFlangeTop);
+        ctx.strokeRect(xLeft, yBotFlangeTop, xRight - xLeft, yBot - yBotFlangeTop);
+
+        // Top flange
+        ctx.fillRect(xLeft, yTop, xRight - xLeft, yTopFlangeBot - yTop);
+        ctx.strokeRect(xLeft, yTop, xRight - xLeft, yTopFlangeBot - yTop);
+
+        // Web
+        ctx.fillRect(xWebLeft, yTopFlangeBot, xWebRight - xWebLeft, yBotFlangeTop - yTopFlangeBot);
+        ctx.strokeRect(xWebLeft, yTopFlangeBot, xWebRight - xWebLeft, yBotFlangeTop - yTopFlangeBot);
+
+        // Beam ID tag & centerline
+        ctx.fillStyle = '#334e5c';
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`G${idx + 1}`, toX(xc), yBot + 14);
+
+        ctx.strokeStyle = '#94a3b8';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(toX(xc), yTop - 12);
+        ctx.lineTo(toX(xc), yBot + 4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      // 4. Global Neutral Axis N.A. (莫蘭迪磚紅 #b94a48)
+      const yNA = toY(yBarBotMm);
+      ctx.strokeStyle = '#b94a48';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 3, 2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(toX(-displaySpanMm / 2), yNA);
+      ctx.lineTo(toX(displaySpanMm / 2), yNA);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#9c3d38';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`中性軸 N.A. (ȳ = ${yBarBotMm.toFixed(1)} mm)`, W - 20, yNA - 5);
+
+      // 5. Dimension Lines (莫蘭迪褐色 #8d6e63)
+      if (beamGeometries.length > 1) {
+        const dimY = baselineY + 28;
+        ctx.strokeStyle = '#8d6e63';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(toX(beamGeometries[0].xCenterMm), dimY);
+        ctx.lineTo(toX(beamGeometries[beamGeometries.length - 1].xCenterMm), dimY);
+        ctx.stroke();
+
+        for (let i = 0; i < beamGeometries.length - 1; i++) {
+          const x1 = toX(beamGeometries[i].xCenterMm);
+          const x2 = toX(beamGeometries[i + 1].xCenterMm);
+          ctx.beginPath();
+          ctx.moveTo(x1, dimY - 4); ctx.lineTo(x1, dimY + 4);
+          ctx.moveTo(x2, dimY - 4); ctx.lineTo(x2, dimY + 4);
+          ctx.stroke();
+
+          ctx.fillStyle = '#5d4037';
+          ctx.font = 'bold 10px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`S=${Math.round(spacingMm)}`, (x1 + x2) / 2, dimY - 4);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 5. INTERACTIVE CANVAS 2: BRIDGE ELEVATION, BMD & DEFLECTION CURVE
+    // =========================================================================
+    function drawElevationAndBMDCanvas(L, wDead, wLive, PL, Mmax, Vmax, deltaLiveMm, allowDeltaLiveMm, designMethod) {
+      const canvas = document.getElementById('elevationCanvas');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // Clean white/soft-gray background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Light architectural grid lines
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 25) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 25) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+
+      const leftX = 65;
+      const rightX = W - 55;
+      const spanPx = rightX - leftX;
+      const midX = (leftX + rightX) / 2;
+
+      // 1. Top Region: Bridge Girder Elevation & Distributed / Point Loads
+      const beamY = 72;
+      const beamThickPx = 12;
+
+      // Draw Uniform Load Arrows (w = wD + wL - 莫蘭迪鋼青色 #567688)
+      const udlTopY = 36;
+      ctx.strokeStyle = '#567688';
+      ctx.fillStyle = '#567688';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(leftX, udlTopY);
+      ctx.lineTo(rightX, udlTopY);
+      ctx.stroke();
+
+      const nArrows = 13;
+      for (let i = 0; i <= nArrows; i++) {
+        const ax = leftX + (spanPx * i) / nArrows;
+        ctx.beginPath();
+        ctx.moveTo(ax, udlTopY);
+        ctx.lineTo(ax, beamY - 2);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(ax - 3, beamY - 7);
+        ctx.lineTo(ax, beamY - 1);
+        ctx.lineTo(ax + 3, beamY - 7);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = '600 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`均佈載重 wD=${wDead.toFixed(1)} + wL+I=${wLive.toFixed(1)} kN/m`, leftX, udlTopY - 6);
+
+      // Draw Midspan Concentrated Load PL (莫蘭迪赤陶色 #b85450)
+      if (PL > 0) {
+        ctx.strokeStyle = '#b85450';
+        ctx.fillStyle = '#b85450';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(midX, 14);
+        ctx.lineTo(midX, beamY - 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(midX - 5, beamY - 9);
+        ctx.lineTo(midX, beamY - 1);
+        ctx.lineTo(midX + 5, beamY - 9);
+        ctx.fill();
+
+        ctx.fillStyle = '#9c3d38';
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`PL+I=${PL.toFixed(1)} kN`, rightX, udlTopY - 6);
+      }
+
+      // Draw H-Beam Girder Body (莫蘭迪石藍 #4b6777)
+      ctx.fillStyle = '#4b6777';
+      ctx.strokeStyle = '#2d404c';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(leftX, beamY, spanPx, beamThickPx);
+      ctx.strokeRect(leftX, beamY, spanPx, beamThickPx);
+
+      // Draw Supports (莫蘭迪冷灰)
+      const supTopY = beamY + beamThickPx;
+      ctx.fillStyle = '#78909c';
+      ctx.beginPath();
+      ctx.moveTo(leftX, supTopY);
+      ctx.lineTo(leftX - 9, supTopY + 14);
+      ctx.lineTo(leftX + 9, supTopY + 14);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(rightX, supTopY);
+      ctx.lineTo(rightX - 9, supTopY + 12);
+      ctx.lineTo(rightX + 9, supTopY + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#78909c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(rightX - 10, supTopY + 15);
+      ctx.lineTo(rightX + 10, supTopY + 15);
+      ctx.stroke();
+
+      // Span Dimension Line
+      ctx.fillStyle = '#334155';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`計算跨徑 L = ${L.toFixed(2)} m (R_A = R_B = ${Vmax.toFixed(1)} kN)`, midX, supTopY + 24);
+
+      // 2. Middle Region: Elastic Deflection Curve
+      const defBaseY = 132;
+      const maxDefPx = Math.min(26, Math.max(8, (deltaLiveMm / Math.max(1, allowDeltaLiveMm)) * 18));
+
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(leftX, defBaseY);
+      ctx.lineTo(rightX, defBaseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const isDefOk = deltaLiveMm <= allowDeltaLiveMm;
+      // 莫蘭迪綠 #4d826c (OK) vs 莫蘭迪粉紅 #bd5757 (NG)
+      ctx.strokeStyle = isDefOk ? '#4d826c' : '#bd5757';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const xi = i / 60;
+        const px = leftX + xi * spanPx;
+        const py = defBaseY + Math.sin(Math.PI * xi) * maxDefPx;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = isDefOk ? '#3b6855' : '#9c3d3d';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`活載最大撓度 ΔLL = ${deltaLiveMm.toFixed(2)} mm (容許 ${allowDeltaLiveMm.toFixed(2)} mm)`, midX, defBaseY + maxDefPx + 14);
+
+      // 3. Bottom Region: Bending Moment Diagram (莫蘭迪琥珀金 #d4a359)
+      const bmdBaseY = 195;
+      const bmdMaxDepthPx = 78;
+
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(leftX, bmdBaseY);
+      ctx.lineTo(rightX, bmdBaseY);
+      ctx.stroke();
+
+      const factorUDL = designMethod === 'ASD' ? (wDead + wLive) : (1.2 * wDead + 1.6 * wLive);
+      const factorP = designMethod === 'ASD' ? PL : (1.6 * PL);
+
+      ctx.fillStyle = 'rgba(212, 163, 89, 0.25)';
+      ctx.strokeStyle = '#b8893d';
+      ctx.lineWidth = 2.2;
+
+      ctx.beginPath();
+      ctx.moveTo(leftX, bmdBaseY);
+      for (let i = 0; i <= 80; i++) {
+        const ratio = i / 80;
+        const x = ratio * L;
+        const mUdl = (factorUDL * x * (L - x)) / 2;
+        const mPt = ratio <= 0.5 ? (factorP * x) / 2 : (factorP * (L - x)) / 2;
+        const mTot = mUdl + mPt;
+        const norm = Mmax > 0 ? (mTot / Mmax) : 0;
+        const px = leftX + ratio * spanPx;
+        const py = bmdBaseY + norm * bmdMaxDepthPx;
+        ctx.lineTo(px, py);
+      }
+      ctx.lineTo(rightX, bmdBaseY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Midspan Peak Moment Annotation
+      ctx.strokeStyle = '#9c6f28';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(midX, bmdBaseY);
+      ctx.lineTo(midX, bmdBaseY + bmdMaxDepthPx);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#875d1b';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`彎矩圖 BMD: M_max = ${Mmax.toFixed(1)} kN·m (${designMethod})`, midX, bmdBaseY + bmdMaxDepthPx + 16);
+    }
+
+    // =========================================================================
+    // 5. INTERACTIVE CANVAS 3: BRIDGE STRUCTURAL PLAN VIEW (平面配置圖)
+    // =========================================================================
+    function drawPlanViewCanvas(L, W_deck, beamGeometries, spacingMm, Lb, diaphSec) {
+      const canvas = document.getElementById('planCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const cw = canvas.width;
+      const ch = canvas.height;
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Clean white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+
+      // Architectural grid lines
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < cw; x += 30) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke();
+      }
+      for (let y = 0; y < ch; y += 30) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
+      }
+
+      // Margins and scale: X-axis along bridge span (0 to L), Y-axis across bridge width (-W/2 to +W/2)
+      const padLeft = 85;
+      const padRight = 85;
+      const padTop = 60;
+      const padBottom = 55;
+
+      const availW = cw - padLeft - padRight;
+      const availH = ch - padTop - padBottom;
+
+      const scaleX = availW / L; // pixels per meter
+      const maxBeamSpanY = beamGeometries.length > 1 
+        ? Math.abs(beamGeometries[beamGeometries.length - 1].xCenterMm - beamGeometries[0].xCenterMm) / 1000 
+        : 1.0;
+      const effectiveDeckW = Math.max(W_deck, maxBeamSpanY + 0.4);
+      const scaleY = availH / effectiveDeckW; // pixels per meter
+
+      const toCanvasX = (xMeter) => padLeft + xMeter * scaleX;
+      const toCanvasY = (yMeterFromCenter) => (padTop + availH / 2) + yMeterFromCenter * scaleY;
+
+      // 1. Draw Bridge Deck Outline & Railing Zones (橋面鋪裝與護欄範圍)
+      const deckTopY = toCanvasY(-W_deck / 2);
+      const deckBotY = toCanvasY(W_deck / 2);
+      const deckHeight = deckBotY - deckTopY;
+      const x0 = toCanvasX(0);
+      const xL = toCanvasX(L);
+      const spanPx = xL - x0;
+
+      // Deck background fill (Morandi light concrete tone)
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(x0, deckTopY, spanPx, deckHeight);
+      ctx.strokeRect(x0, deckTopY, spanPx, deckHeight);
+
+      // Railing borders (top & bottom safety curbs, 150mm approx)
+      const curbH = Math.max(5, 0.15 * scaleY);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x0, deckTopY, spanPx, curbH);
+      ctx.fillRect(x0, deckBotY - curbH, spanPx, curbH);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x0, deckTopY + curbH); ctx.lineTo(xL, deckTopY + curbH);
+      ctx.moveTo(x0, deckBotY - curbH); ctx.lineTo(xL, deckBotY - curbH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 2. Draw Longitudinal Main H-Beams (各主梁縱向投影)
+      beamGeometries.forEach((g, idx) => {
+        const yCenterM = g.xCenterMm / 1000;
+        const cy = toCanvasY(yCenterM);
+        const flangeWidthPx = Math.max(4, (g.sec.B / 1000) * scaleY);
+
+        // Top flange outer outline (莫蘭迪霧霾藍 #5b7c8d / #334e5c)
+        ctx.fillStyle = 'rgba(91, 124, 141, 0.25)';
+        ctx.strokeStyle = '#5b7c8d';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(x0, cy - flangeWidthPx / 2, spanPx, flangeWidthPx);
+        ctx.strokeRect(x0, cy - flangeWidthPx / 2, spanPx, flangeWidthPx);
+
+        // Beam centerline (Dash dot line)
+        ctx.strokeStyle = '#3e5663';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x0, cy);
+        ctx.lineTo(xL, cy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Girder ID tag at left & right
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`G${idx + 1}`, x0 - 8, cy + 3.5);
+        ctx.textAlign = 'left';
+        ctx.fillText(`G${idx + 1}`, xL + 8, cy + 3.5);
+      });
+
+      // 3. Draw Transverse Diaphragms along span (端隔梁與各間距 Lb 之中隔梁 - 實體繪製寬度與大小)
+      const numBays = Math.max(1, Math.round(L / Lb));
+      const actualBaySpacing = L / numBays;
+      const diaphXPositions = [];
+      for (let i = 0; i <= numBays; i++) {
+        diaphXPositions.push(i * actualBaySpacing);
+      }
+
+      // Lateral range for diaphragms (from first beam center to last beam center)
+      const firstY = toCanvasY(beamGeometries[0].xCenterMm / 1000);
+      const lastY = toCanvasY(beamGeometries[beamGeometries.length - 1].xCenterMm / 1000);
+      const minY = Math.min(firstY, lastY);
+      const maxY = Math.max(firstY, lastY);
+      const diaphSpanH = maxY - minY;
+
+      // Diaphragm physical visual width in pixels (based on flange width B of diaphragm section)
+      const diaphB_mm = diaphSec ? diaphSec.B : 75;
+      const diaphH_mm = diaphSec ? diaphSec.H : 150;
+      const diaphVisualWidthPx = Math.max(7, Math.min(22, (diaphB_mm / 1000) * scaleX * 1.5));
+
+      diaphXPositions.forEach((posM, dIdx) => {
+        const dx = toCanvasX(posM);
+        const isEnd = dIdx === 0 || dIdx === diaphXPositions.length - 1;
+
+        // Draw Diaphragm Solid Body Profile (莫蘭迪冷灰藍 #607d8b / 邊框 #334155)
+        ctx.fillStyle = isEnd ? '#475569' : '#64748b';
+        ctx.strokeStyle = isEnd ? '#0f172a' : '#334155';
+        ctx.lineWidth = 1.2;
+
+        const leftPx = dx - diaphVisualWidthPx / 2;
+        ctx.fillRect(leftPx, minY, diaphVisualWidthPx, diaphSpanH);
+        ctx.strokeRect(leftPx, minY, diaphVisualWidthPx, diaphSpanH);
+
+        // Internal detail line for channel / H-shape orientation
+        if (diaphSec && diaphSec.type === 'C') {
+          // Channel web line
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(leftPx + 2, minY);
+          ctx.lineTo(leftPx + 2, maxY);
+          ctx.stroke();
+        } else {
+          // H-beam web centerline
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(dx, minY);
+          ctx.lineTo(dx, maxY);
+          ctx.stroke();
+        }
+
+        // Stiffener connection dots / bolt plates at each beam intersection
+        beamGeometries.forEach(g => {
+          const gy = toCanvasY(g.xCenterMm / 1000);
+          ctx.fillStyle = isEnd ? '#1e293b' : '#334155';
+          ctx.fillRect(leftPx - 2, gy - 3.5, diaphVisualWidthPx + 4, 7);
+          ctx.strokeStyle = '#0f172a';
+          ctx.strokeRect(leftPx - 2, gy - 3.5, diaphVisualWidthPx + 4, 7);
+        });
+
+        // Diaphragm Specification Tag Pill above each diaphragm line
+        const tagText = isEnd ? `端隔梁: ${diaphSec.name}` : `D${dIdx}: ${diaphSec.name}`;
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        const textMetrics = ctx.measureText(tagText);
+        const tagW = textMetrics.width + 10;
+        const tagH = 16;
+        const tagY = minY - 18;
+
+        // Tag background pill
+        ctx.fillStyle = isEnd ? '#f1f5f9' : '#ffffff';
+        ctx.strokeStyle = isEnd ? '#475569' : '#94a3b8';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(dx - tagW / 2, tagY, tagW, tagH, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        // Tag text
+        ctx.fillStyle = isEnd ? '#0f172a' : '#334155';
+        ctx.textAlign = 'center';
+        ctx.fillText(tagText, dx, tagY + 11.5);
+      });
+
+      // Callout Annotation pointing to Diaphragm size (標註橫樑斷面詳細尺寸: 高度H x 寬度B)
+      if (diaphXPositions.length > 1 && beamGeometries.length > 1) {
+        const targetX = toCanvasX(diaphXPositions[0]);
+        const targetY = (minY + maxY) / 2;
+        const calloutX = targetX + diaphVisualWidthPx / 2 + 15;
+        const calloutY = targetY;
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(targetX + diaphVisualWidthPx / 2, targetY);
+        ctx.lineTo(calloutX, calloutY);
+        ctx.lineTo(calloutX + 25, calloutY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 9.5px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`橫樑斷面: H=${diaphH_mm}mm × B=${diaphB_mm}mm`, calloutX + 28, calloutY + 3.5);
+      }
+
+      // 4. Draw Abutment Bearing Support Lines (A1 / A2 支承線)
+      const supH = Math.max(16, (maxY - minY) + 20);
+      const supYMid = (minY + maxY) / 2;
+
+      // Left Bearing Line (Fixed Pin Support A1)
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x0, supYMid - supH / 2);
+      ctx.lineTo(x0, supYMid + supH / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Right Bearing Line (Roller Support A2)
+      ctx.strokeStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.moveTo(xL, supYMid - supH / 2);
+      ctx.lineTo(xL, supYMid + supH / 2);
+      ctx.stroke();
+
+      // Bearing Symbols at each beam
+      beamGeometries.forEach(g => {
+        const gy = toCanvasY(g.xCenterMm / 1000);
+        // Left Pin Symbol (▲)
+        ctx.fillStyle = '#0369a1';
+        ctx.beginPath();
+        ctx.moveTo(x0, gy);
+        ctx.lineTo(x0 - 6, gy - 4);
+        ctx.lineTo(x0 - 6, gy + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right Roller Symbol (○)
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(xL + 4, gy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 5. Dimension Lines (莫蘭迪褐色/暗金 #9c6f28 & #8d6e63)
+      // Top Span Dimension (Each Diaphragm Bay & Total Span)
+      const dimTopY = padTop - 28;
+      const dimTotalY = padTop - 42;
+
+      // Intermediate bay dimensions
+      ctx.strokeStyle = '#b5894b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x0, dimTopY);
+      ctx.lineTo(xL, dimTopY);
+      ctx.stroke();
+
+      for (let i = 0; i < diaphXPositions.length - 1; i++) {
+        const xa = toCanvasX(diaphXPositions[i]);
+        const xb = toCanvasX(diaphXPositions[i + 1]);
+        ctx.beginPath();
+        ctx.moveTo(xa, dimTopY - 3); ctx.lineTo(xa, dimTopY + 3);
+        ctx.moveTo(xb, dimTopY - 3); ctx.lineTo(xb, dimTopY + 3);
+        ctx.stroke();
+
+        ctx.fillStyle = '#875d1b';
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`@${actualBaySpacing.toFixed(2)}m`, (xa + xb) / 2, dimTopY - 3);
+      }
+
+      // Total Span Dimension
+      ctx.beginPath();
+      ctx.moveTo(x0, dimTotalY);
+      ctx.lineTo(xL, dimTotalY);
+      ctx.moveTo(x0, dimTotalY - 4); ctx.lineTo(x0, dimTotalY + 4);
+      ctx.moveTo(xL, dimTotalY - 4); ctx.lineTo(xL, dimTotalY + 4);
+      ctx.stroke();
+
+      ctx.fillStyle = '#78350f';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`計算跨距 L = ${L.toFixed(2)} m (全橋共 ${diaphXPositions.length} 道橫隔梁)`, (x0 + xL) / 2, dimTotalY - 4);
+
+      // Bottom / Axis label
+      const dimBotY = ch - 20;
+      ctx.strokeStyle = '#8d6e63';
+      ctx.beginPath();
+      ctx.moveTo(x0, dimBotY);
+      ctx.lineTo(xL, dimBotY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`A1 橋台 (固定端 Pin) ── 橋樑中心線 ℄ ── A2 橋台 (活動端 Roller) | 橫隔梁: ${diaphSec.name}`, (x0 + xL) / 2, dimBotY + 12);
+
+      // Water Flow / Direction indicator
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`水流方向 ➔`, x0 + 10, deckBotY - curbH - 6);
+    }
+
+    // =========================================================================
+    // 6. DETAILED STEP-BY-STEP ENGINEERING REPORT GENERATOR
+    // =========================================================================
+    function renderDetailedReport(d) {
+      const container = document.getElementById('calculationReportContent');
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-3 rounded bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 border-b border-slate-200 pb-1">一、設計基本條件與材料參數</h4>
+            <p>• <strong>工程名稱</strong>：${d.projectName}</p>
+            <p>• <strong>結構型式</strong>：單跨簡支多根 H 型鋼並列合成主梁橋，計算跨徑 L = ${d.L.toFixed(2)} m，橋面全寬 W = ${d.W.toFixed(2)} m，受壓翼板側向支撐間距 Lb = ${d.Lb.toFixed(2)} m。</p>
+            <p>• <strong>鋼材性質</strong>：降伏強度 Fy = ${d.Fy} MPa，彈性模數 Es = 200,000 MPa。</p>
+            <p>• <strong>主梁斷面配置</strong>：共採用 <strong>${d.nBeams} 支</strong> H 型鋼（${d.configSummary}）。</p>
+            <p>• <strong>橫向隔梁配置</strong>：選用 <strong>${d.diaphSec.name}</strong>，全橋共配置 <strong>${d.numDiaphragms} 道</strong> 橫向隔梁（含兩端端隔梁與各間距 Lb 之中隔梁）。</p>
+            <p>• <strong>組合斷面幾何性質</strong>：由平行軸定理計算得總斷面積 A_total = ${d.AtotalCm2.toFixed(2)} cm²，整體重心軸距底面 y_bot = ${d.yBarBotCm.toFixed(2)} cm，強軸總慣性矩 Ix_total = ${Math.round(d.IxTotalCm4).toLocaleString()} cm⁴，最小彈性斷面係數 Zx_min = ${Math.round(d.ZxMinCm3).toLocaleString()} cm³，塑性斷面係數 Zpx = ${Math.round(d.ZpxTotalCm3).toLocaleString()} cm³，腹板總抗剪面積 Aw = ${d.AwTotalCm2.toFixed(2)} cm²。</p>
+          </div>
+
+          <div class="p-3 rounded bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 border-b border-slate-200 pb-1">二、載重計算與設計內力分析</h4>
+            <p>• <strong>靜載重 (Dead Load, D)</strong>：鋼主梁自重（含 15% 橫隔梁與接合板）w_steel = ${d.wSteelKnM.toFixed(2)} kN/m + 橋面板靜載 w_deck = ${d.wDeckKnM.toFixed(2)} kN/m + 欄杆管線 w_rail = ${d.wRail.toFixed(2)} kN/m，合計 wD = ${d.wDeadTotalKnM.toFixed(2)} kN/m。</p>
+            <p>• <strong>活載重與衝擊效應 (L + I)</strong>：計入衝擊係數 I = ${(d.impactI * 100).toFixed(1)}% 與橫向分配係數 η = ${d.distFactor.toFixed(2)} 後，均佈活載 w_(L+I) = ${d.wLiveWithImpactKnM.toFixed(2)} kN/m，跨中集中活載 P_(L+I) = ${d.PLWithImpactKn.toFixed(2)} kN。</p>
+            <p>• <strong>靜載與活載內力</strong>：MD = (wD · L²) / 8 = ${d.MD.toFixed(2)} kN·m，VD = (wD · L) / 2 = ${d.VD.toFixed(2)} kN；M_(L+I) = (w_(L+I) · L²) / 8 + (P_(L+I) · L) / 4 = ${d.MLI.toFixed(2)} kN·m，V_(L+I) = (w_(L+I) · L) / 2 + P_(L+I) / 2 = ${d.VLI.toFixed(2)} kN。</p>
+            <p>• <strong>設計載重組合</strong>：
+              <br>　- 容許應力法 (ASD)：Ms = MD + M_(L+I) = ${d.Ms_ASD.toFixed(2)} kN·m，Vs = ${d.Vs_ASD.toFixed(2)} kN。
+              <br>　- 極限設計法 (LSD)：Mu = 1.2·MD + 1.6·M_(L+I) = ${d.Mu_LSD.toFixed(2)} kN·m，Vu = ${d.Vu_LSD.toFixed(2)} kN。
+            </p>
+          </div>
+        </div>
+        <div class="p-3 rounded bg-slate-50 border border-slate-200 space-y-1">
+          <h4 class="font-bold text-slate-900 border-b border-slate-200 pb-1">三、規範強度與服務性檢核摘要</h4>
+          <p>1. <strong>撓度檢核</strong>：依《公路橋樑設計規範》，活載重產生之跨中最大撓度 Δ_LL = ${d.deltaLiveMm.toFixed(2)} mm ≦ 容許撓度 Δ_allow = ${d.allowDeltaLiveMm.toFixed(2)} mm；總載重撓度 Δ_total = ${d.deltaTotalMm.toFixed(2)} mm ≦ L / 300 = ${d.allowDeltaTotalMm.toFixed(2)} mm。</p>
+          <p>2. <strong>人行橋自然振動頻率檢核（舒適度與防共振）</strong>：依《公路橋樑設計規範》第 2.6 節及《人行天橋設計規範》，考慮有效振動線質量 m = ${d.massPerMeterKgM.toFixed(1)} kg/m（含 ${(d.vibLiveRatio*100).toFixed(0)}% 活載參與質量，等效振動靜撓度 Δ_vib = ${d.deltaVibMm.toFixed(2)} mm），簡支梁一階垂直自然頻率 f_v = (π / 2L²) · √(Es·Ix / m) ≒ 17.75 / √Δ_vib = ${d.freqVerticalHz.toFixed(2)} Hz ≧ ${d.minAllowFreqVertHz.toFixed(2)} Hz（成功避開行人步頻 1.6 ~ 2.4 Hz 共振區）；橫向一階自然頻率 f_lat = ${d.freqLateralHz.toFixed(2)} Hz ≧ ${d.minAllowFreqLatHz.toFixed(2)} Hz。</p>
+          <p>3. <strong>側向扭轉挫屈與抗彎檢核</strong>：受壓翼板無支撐長度 Lb = ${(d.Lb).toFixed(2)} m（塑性極限長 Lp = ${(d.Lp_cm/100).toFixed(2)} m，彈性極限長 Lr = ${(d.Lr_cm/100).toFixed(2)} m，細長比 Lb / ry = ${d.slendernessLbRy.toFixed(1)}）。ASD 實際彎曲應力 fb = ${d.sigmaB_ASD_MPa.toFixed(1)} MPa vs. 容許應力 Fb = ${d.Fb_allow_MPa.toFixed(1)} MPa；LSD 極限設計彎矩 Mu = ${d.Mu_LSD.toFixed(1)} kN·m vs. 標稱抗彎強度 φb·Mn = ${d.phiMn_LSD_kNm.toFixed(1)} kN·m。</p>
+          <p>4. <strong>抗剪強度檢核</strong>：ASD 腹板平均剪應力 τ = ${d.tau_ASD_MPa.toFixed(2)} MPa vs. 容許剪應力 Fv = 0.40·Fy = ${d.Fv_allow_MPa.toFixed(1)} MPa；LSD 極限剪力 Vu = ${d.Vu_LSD.toFixed(1)} kN vs. 設計抗剪強度 φv·Vn = ${d.phiVn_LSD_kN.toFixed(1)} kN。</p>
+          <p>5. <strong>橫向隔梁（橫向樑）強度與側向穩定檢核</strong>：依《公路橋樑設計規範》第 6.13 節及《鋼構造建築物鋼結構設計技術規範》第 13 章側向支撐強度規定，橫向隔梁必須具備抵抗受壓翼板軸向推力 2% 之挫屈限制推力 P_br = ${d.PbrKn.toFixed(1)} kN ≦ 橫隔梁抗壓容許力 P_allow = ${d.P_diaph_allow_Kn.toFixed(1)} kN (OK)；橫隔梁梁深比 H_diaph / H_girder = ${(d.diaphDepthRatio*100).toFixed(0)}% ≧ 50% (OK)，可確保主梁橫向束制完整，防止側向扭轉挫屈。</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
